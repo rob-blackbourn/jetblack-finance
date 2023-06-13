@@ -133,3 +133,117 @@ def test_pnl():
     # What if we sell 10 at 102?
     trading_pnl.add(-10, 102)
     assert trading_pnl.pnl(102) == (0, 0, 102, 40, 0)
+
+
+def test_many_buys_one_sell_fifo():
+
+    trading_pnl = TradingPnl(MatchStyle.FIFO)
+
+    trading_pnl.add(1, 100)
+    trading_pnl.add(1, 102)
+    trading_pnl.add(1, 101)
+    trading_pnl.add(1, 104)
+    trading_pnl.add(1, 103)
+    trading_pnl.add(-5, 104)
+    assert trading_pnl.matched == [
+        MatchedTrade(-1, 100, 104),
+        MatchedTrade(-1, 102, 104),
+        MatchedTrade(-1, 101, 104),
+        MatchedTrade(-1, 104, 104),
+        MatchedTrade(-1, 103, 104),
+    ]
+
+
+def test_many_buys_one_sell_lifo():
+
+    trading_pnl = TradingPnl(MatchStyle.LIFO)
+
+    trading_pnl.add(1, 100)
+    trading_pnl.add(1, 102)
+    trading_pnl.add(1, 101)
+    trading_pnl.add(1, 104)
+    trading_pnl.add(1, 103)
+    trading_pnl.add(-5, 104)
+    assert trading_pnl.matched == [
+        MatchedTrade(-1, 103, 104),
+        MatchedTrade(-1, 104, 104),
+        MatchedTrade(-1, 101, 104),
+        MatchedTrade(-1, 102, 104),
+        MatchedTrade(-1, 100, 104),
+    ]
+
+
+def test_many_buys_one_sell_best_price():
+
+    trading_pnl = TradingPnl(MatchStyle.BEST_PRICE)
+
+    trading_pnl.add(1, 100)
+    trading_pnl.add(1, 102)
+    trading_pnl.add(1, 101)
+    trading_pnl.add(1, 104)
+    trading_pnl.add(1, 103)
+    trading_pnl.add(-5, 104)
+    assert trading_pnl.matched == [
+        MatchedTrade(-1, 100, 104),
+        MatchedTrade(-1, 101, 104),
+        MatchedTrade(-1, 102, 104),
+        MatchedTrade(-1, 103, 104),
+        MatchedTrade(-1, 104, 104),
+    ]
+
+
+def test_many_sells_one_buy_best_price():
+
+    trading_pnl = TradingPnl(MatchStyle.BEST_PRICE)
+
+    trading_pnl.add(-1, 100)
+    trading_pnl.add(-1, 102)
+    trading_pnl.add(-1, 101)
+    trading_pnl.add(-1, 104)
+    trading_pnl.add(-1, 103)
+    trading_pnl.add(5, 104)
+    assert trading_pnl.matched == [
+        MatchedTrade(1, 104, 104),
+        MatchedTrade(1, 103, 104),
+        MatchedTrade(1, 102, 104),
+        MatchedTrade(1, 101, 104),
+        MatchedTrade(1, 100, 104),
+    ]
+
+
+def test_many_buys_one_sell_worst_price():
+
+    trading_pnl = TradingPnl(MatchStyle.WORST_PRICE)
+
+    trading_pnl.add(1, 100)
+    trading_pnl.add(1, 102)
+    trading_pnl.add(1, 101)
+    trading_pnl.add(1, 104)
+    trading_pnl.add(1, 103)
+    trading_pnl.add(-5, 104)
+    assert trading_pnl.matched == [
+        MatchedTrade(-1, 104, 104),
+        MatchedTrade(-1, 103, 104),
+        MatchedTrade(-1, 102, 104),
+        MatchedTrade(-1, 101, 104),
+        MatchedTrade(-1, 100, 104),
+    ]
+
+
+def test_many_sells_one_buy_worst_price():
+
+    trading_pnl = TradingPnl(MatchStyle.WORST_PRICE)
+
+    trading_pnl.add(-1, 100)
+    trading_pnl.add(-1, 102)
+    trading_pnl.add(-1, 101)
+    trading_pnl.add(-1, 104)
+    trading_pnl.add(-1, 103)
+    trading_pnl.add(5, 104)
+    assert trading_pnl.matched == [
+        MatchedTrade(1, 100, 104),
+        MatchedTrade(1, 101, 104),
+        MatchedTrade(1, 102, 104),
+        MatchedTrade(1, 103, 104),
+        MatchedTrade(1, 104, 104),
+    ]

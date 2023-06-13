@@ -141,9 +141,9 @@ class TradingPnl:
         trades = sorted(self.unmatched, key=lambda x: x[1])
 
         if self.match_style == MatchStyle.BEST_PRICE:
-            trade = trades[-1] if self.quantity > 0 else trades[0]
-        elif self.match_style == MatchStyle.WORST_PRICE:
             trade = trades[0] if self.quantity > 0 else trades[-1]
+        elif self.match_style == MatchStyle.WORST_PRICE:
+            trade = trades[-1] if self.quantity > 0 else trades[0]
         else:
             raise ValueError("unknown match style")
 
