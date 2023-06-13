@@ -11,10 +11,11 @@ trading_pnl = TradingPnl(MatchStyle.FIFO)
 
 # Buy 10 @ 100
 trading_pnl.add(10, 100)
+# (quantity, avg_cost, price, realized, unrealized)
 assert trading_pnl.pnl(100) == (10, 100, 100, 0, 0)
 
 # What is the P&L if the price goes to 102? 
-assert trading_pnl.pnl(102) == (10, 100.0, 102, 0, 20) # (quantity, avg_cost, price, realized, unrealized)
+assert trading_pnl.pnl(102) == (10, 100.0, 102, 0, 20)
 
 # What if we buy another 5 at 102?
 trading_pnl.add(10, 102)
