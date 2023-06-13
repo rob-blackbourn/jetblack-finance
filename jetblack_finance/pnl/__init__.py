@@ -1,10 +1,11 @@
 """pnl"""
 
-from .trading_pnl import TradingPnl, Trade, MatchedTrade, PnlStrip
+from .trading_pnl import MatchedTrade, MatchStyle, PnlStrip, Trade, TradingPnl
 
 __all__ = [
-    'TradingPnl',
-    'Trade',
     'MatchedTrade',
-    'PnlStrip'
+    'MatchStyle',
+    'PnlStrip',
+    'Trade',
+    'TradingPnl',
 ]

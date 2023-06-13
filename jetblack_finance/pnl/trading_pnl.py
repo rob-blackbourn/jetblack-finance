@@ -57,19 +57,15 @@ class PnlStrip(NamedTuple):
 class TradingPnl:
     """A class to calculate trading P&L"""
 
-    def __init__(self) -> None:
+    def __init__(self, match_style: MatchStyle) -> None:
+        self.match_style = match_style
         self.quantity: int = 0
         self.cost: float = 0
         self.realized: float = 0
         self.unmatched: Deque[Trade] = deque()
         self.matched: List[MatchedTrade] = []
 
-    def add(
-            self,
-            quantity: int,
-            price: float,
-            match_style: MatchStyle = MatchStyle.BEST_PRICE
-    ) -> None:
+    def add(self, quantity: int, price: float) -> None:
         if (
             # We are flat
             self.quantity == 0 or
@@ -80,7 +76,7 @@ class TradingPnl:
         ):
             self._extend_position(quantity, price)
         else:
-            self._reduce_position(quantity, price, match_style)
+            self._reduce_position(quantity, price)
 
     @property
     def avg_cost(self) -> float:
@@ -106,14 +102,9 @@ class TradingPnl:
         self.quantity += quantity
         self.unmatched.append(Trade(quantity, price))
 
-    def _reduce_position(
-            self,
-            quantity: int,
-            price: float,
-            match_style: MatchStyle
-    ) -> None:
+    def _reduce_position(self, quantity: int, price: float) -> None:
         while self.unmatched and quantity != 0:
-            matched_quantity, matched_price = self._pop_unmatched(match_style)
+            matched_quantity, matched_price = self._pop_unmatched()
 
             if abs(matched_quantity) <= abs(quantity):
                 remaining_quantity = quantity + matched_quantity
@@ -121,10 +112,7 @@ class TradingPnl:
             else:
                 unmatched_quantity = matched_quantity + quantity
                 matched_quantity = -quantity
-                self._push_unmatched(
-                    Trade(unmatched_quantity, matched_price),
-                    match_style
-                )
+                self._push_unmatched(Trade(unmatched_quantity, matched_price))
                 remaining_quantity = 0
 
             self.matched.append(
@@ -141,20 +129,20 @@ class TradingPnl:
             quantity = remaining_quantity
 
         if quantity != 0:
-            self.add(quantity, price, match_style)
+            self.add(quantity, price)
 
-    def _pop_unmatched(self, match_style: MatchStyle) -> Trade:
-        if match_style == MatchStyle.FIFO:
+    def _pop_unmatched(self) -> Trade:
+        if self.match_style == MatchStyle.FIFO:
             return self.unmatched.popleft()
 
-        if match_style == MatchStyle.LIFO:
+        if self.match_style == MatchStyle.LIFO:
             return self.unmatched.pop()
 
         trades = sorted(self.unmatched, key=lambda x: x[1])
 
-        if match_style == MatchStyle.BEST_PRICE:
+        if self.match_style == MatchStyle.BEST_PRICE:
             trade = trades[-1] if self.quantity > 0 else trades[0]
-        elif match_style == MatchStyle.WORST_PRICE:
+        elif self.match_style == MatchStyle.WORST_PRICE:
             trade = trades[0] if self.quantity > 0 else trades[-1]
         else:
             raise ValueError("unknown match style")
@@ -163,12 +151,12 @@ class TradingPnl:
 
         return trade
 
-    def _push_unmatched(self, trade: Trade, match_style: MatchStyle) -> None:
-        if match_style == MatchStyle.FIFO:
+    def _push_unmatched(self, trade: Trade) -> None:
+        if self.match_style == MatchStyle.FIFO:
             self.unmatched.appendleft(trade)
-        elif match_style == MatchStyle.LIFO:
+        elif self.match_style == MatchStyle.LIFO:
             self.unmatched.append(trade)
-        elif match_style in (MatchStyle.BEST_PRICE, MatchStyle.WORST_PRICE):
+        elif self.match_style in (MatchStyle.BEST_PRICE, MatchStyle.WORST_PRICE):
             self.unmatched.append(trade)
         else:
             raise ValueError("unknown match style")
