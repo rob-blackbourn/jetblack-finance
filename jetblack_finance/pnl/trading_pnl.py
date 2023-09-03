@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABCMeta, abstractmethod
 from collections import deque
 from typing import Deque, List
 
@@ -13,11 +14,10 @@ from .types import (
 )
 
 
-class TradingPnl:
+class TradingPnl(metaclass=ABCMeta):
     """A class to calculate trading P&L"""
 
-    def __init__(self, match_style: MatchStyle) -> None:
-        self.match_style = match_style
+    def __init__(self) -> None:
         self.quantity: int = 0
         self.cost: float = 0
         self.realized: float = 0
@@ -63,7 +63,7 @@ class TradingPnl:
 
     def _reduce_position(self, quantity: int, price: float) -> None:
         while self.unmatched and quantity != 0:
-            matched_quantity, matched_price = self._pop_unmatched()
+            matched_quantity, matched_price = self.pop_unmatched()
 
             if abs(matched_quantity) <= abs(quantity):
                 remaining_quantity = quantity + matched_quantity
@@ -71,7 +71,7 @@ class TradingPnl:
             else:
                 unmatched_quantity = matched_quantity + quantity
                 matched_quantity = -quantity
-                self._push_unmatched(Trade(unmatched_quantity, matched_price))
+                self.push_unmatched(Trade(unmatched_quantity, matched_price))
                 remaining_quantity = 0
 
             self.matched.append(
@@ -90,35 +90,55 @@ class TradingPnl:
         if quantity != 0:
             self.add(quantity, price)
 
-    def _pop_unmatched(self) -> Trade:
-        if self.match_style == MatchStyle.FIFO:
-            return self.unmatched.popleft()
+    @abstractmethod
+    def pop_unmatched(self) -> Trade:
+        ...
 
-        if self.match_style == MatchStyle.LIFO:
-            return self.unmatched.pop()
-
-        trades = sorted(self.unmatched, key=lambda x: x[1])
-
-        if self.match_style == MatchStyle.BEST_PRICE:
-            trade = trades[0] if self.quantity > 0 else trades[-1]
-        elif self.match_style == MatchStyle.WORST_PRICE:
-            trade = trades[-1] if self.quantity > 0 else trades[0]
-        else:
-            raise ValueError("unknown match style")
-
-        self.unmatched.remove(trade)
-
-        return trade
-
-    def _push_unmatched(self, trade: Trade) -> None:
-        if self.match_style == MatchStyle.FIFO:
-            self.unmatched.appendleft(trade)
-        elif self.match_style == MatchStyle.LIFO:
-            self.unmatched.append(trade)
-        elif self.match_style in (MatchStyle.BEST_PRICE, MatchStyle.WORST_PRICE):
-            self.unmatched.append(trade)
-        else:
-            raise ValueError("unknown match style")
+    @abstractmethod
+    def push_unmatched(self, trade: Trade) -> None:
+        ...
 
     def __repr__(self) -> str:
         return f"{self.quantity} {self.cost} {self.realized}"
+
+
+class FifoTradingPnl(TradingPnl):
+
+    def pop_unmatched(self) -> Trade:
+        return self.unmatched.popleft()
+
+    def push_unmatched(self, trade: Trade) -> None:
+        self.unmatched.appendleft(trade)
+
+
+class LifoTradingPnl(TradingPnl):
+
+    def pop_unmatched(self) -> Trade:
+        return self.unmatched.pop()
+
+    def push_unmatched(self, trade: Trade) -> None:
+        self.unmatched.append(trade)
+
+
+class BestPriceTradingPnl(TradingPnl):
+
+    def pop_unmatched(self) -> Trade:
+        trades = sorted(self.unmatched, key=lambda x: x[1])
+        trade = trades[0] if self.quantity > 0 else trades[-1]
+        self.unmatched.remove(trade)
+        return trade
+
+    def push_unmatched(self, trade: Trade) -> None:
+        self.unmatched.append(trade)
+
+
+class WorstPriceTradingPnl(TradingPnl):
+
+    def pop_unmatched(self) -> Trade:
+        trades = sorted(self.unmatched, key=lambda x: x[1])
+        trade = trades[-1] if self.quantity > 0 else trades[0]
+        self.unmatched.remove(trade)
+        return trade
+
+    def push_unmatched(self, trade: Trade) -> None:
+        self.unmatched.append(trade)
