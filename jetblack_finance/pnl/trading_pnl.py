@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from collections import deque
+from decimal import Decimal
 from typing import Deque, List
 
 from .types import (
@@ -17,9 +18,9 @@ class TradingPnl(metaclass=ABCMeta):
     """A class to calculate trading P&L"""
 
     def __init__(self) -> None:
-        self.quantity: int = 0
-        self.cost: float = 0
-        self.realized: float = 0
+        self.quantity: Decimal = Decimal(0)
+        self.cost: Decimal = Decimal(0)
+        self.realized: Decimal = Decimal(0)
         self.unmatched: Deque[Trade] = deque()
         self.matched: List[MatchedTrade] = []
 
@@ -37,16 +38,16 @@ class TradingPnl(metaclass=ABCMeta):
             self._reduce_position(trade)
 
     @property
-    def avg_cost(self) -> float:
+    def avg_cost(self) -> Decimal:
         if self.quantity == 0:
-            return 0
+            return Decimal(0)
 
         return -self.cost / self.quantity
 
-    def unrealized(self, price: float) -> float:
+    def unrealized(self, price: Decimal) -> Decimal:
         return self.quantity * price + self.cost
 
-    def pnl(self, price: float) -> PnlStrip:
+    def pnl(self, price: Decimal) -> PnlStrip:
         return PnlStrip(
             self.quantity,
             self.avg_cost,
@@ -69,7 +70,7 @@ class TradingPnl(metaclass=ABCMeta):
             else:
                 matched, unmatched = matched.split(-trade.quantity)
                 self.push_unmatched(unmatched)
-                next_trade = Trade(0, 0)
+                next_trade = Trade(Decimal(0), Decimal(0))
 
             trade_cost = -trade.quantity * trade.price
             matched_cost = -matched.quantity * matched.price

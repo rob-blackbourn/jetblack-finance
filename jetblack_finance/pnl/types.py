@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import NamedTuple, Tuple
 
 
 class Trade(NamedTuple):
     """A simple trade"""
 
-    quantity: int
+    quantity: Decimal
     """The signed quantity where a positive value is a buy"""
 
-    price: float
+    price: Decimal
     """The price"""
 
-    def split(self, quantity: int) -> Tuple[Trade, Trade]:
+    def split(self, quantity: Decimal) -> Tuple[Trade, Trade]:
         matched = Trade(quantity, self.price)
         unmatched = Trade(self.quantity-quantity, self.price)
         return matched, unmatched
@@ -31,8 +32,8 @@ class MatchedTrade(NamedTuple):
 
 
 class PnlStrip(NamedTuple):
-    quantity: int
-    avg_cost: float
-    price: float
-    realized: float
-    unrealized: float
+    quantity: Decimal
+    avg_cost: Decimal
+    price: Decimal
+    realized: Decimal
+    unrealized: Decimal
