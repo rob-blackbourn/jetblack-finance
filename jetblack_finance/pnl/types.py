@@ -1,6 +1,8 @@
 """Types"""
 
-from typing import NamedTuple
+from __future__ import annotations
+
+from typing import NamedTuple, Tuple
 
 
 class Trade(NamedTuple):
@@ -12,18 +14,20 @@ class Trade(NamedTuple):
     price: float
     """The price"""
 
+    def split(self, quantity: int) -> Tuple[Trade, Trade]:
+        matched = Trade(quantity, self.price)
+        unmatched = Trade(self.quantity-quantity, self.price)
+        return matched, unmatched
+
 
 class MatchedTrade(NamedTuple):
     """A matched trade"""
 
-    quantity: int
-    """The quantity with the sign of the closing trade"""
+    opening: Trade
+    """The opening trade"""
 
-    opening_price: float
-    """The price of the opening trade"""
-
-    closing_price: float
-    """The price of the closing trade"""
+    closing: Trade
+    """The closing trade"""
 
 
 class PnlStrip(NamedTuple):

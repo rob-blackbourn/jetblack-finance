@@ -23,18 +23,18 @@ class TradingPnl(metaclass=ABCMeta):
         self.unmatched: Deque[Trade] = deque()
         self.matched: List[MatchedTrade] = []
 
-    def add(self, quantity: int, price: float) -> None:
+    def add(self, trade: Trade) -> None:
         if (
             # We are flat
             self.quantity == 0 or
             # We are long and buying
-            (self.quantity > 0 and quantity > 0) or
+            (self.quantity > 0 and trade.quantity > 0) or
             # We are short and selling.
-            (self.quantity < 0 and quantity < 0)
+            (self.quantity < 0 and trade.quantity < 0)
         ):
-            self._extend_position(quantity, price)
+            self._extend_position(trade)
         else:
-            self._reduce_position(quantity, price)
+            self._reduce_position(trade)
 
     @property
     def avg_cost(self) -> float:
@@ -55,39 +55,35 @@ class TradingPnl(metaclass=ABCMeta):
             self.unrealized(price)
         )
 
-    def _extend_position(self, quantity: int, price: float) -> None:
-        self.cost -= quantity * price
-        self.quantity += quantity
-        self.unmatched.append(Trade(quantity, price))
+    def _extend_position(self, trade: Trade) -> None:
+        self.cost -= trade.quantity * trade.price
+        self.quantity += trade.quantity
+        self.unmatched.append(trade)
 
-    def _reduce_position(self, quantity: int, price: float) -> None:
-        while self.unmatched and quantity != 0:
-            matched_quantity, matched_price = self.pop_unmatched()
+    def _reduce_position(self, trade: Trade) -> None:
+        while self.unmatched and trade.quantity != 0:
+            matched = self.pop_unmatched()
 
-            if abs(matched_quantity) <= abs(quantity):
-                remaining_quantity = quantity + matched_quantity
-                quantity = -matched_quantity
+            if abs(matched.quantity) <= abs(trade.quantity):
+                trade, next_trade = trade.split(-matched.quantity)
             else:
-                unmatched_quantity = matched_quantity + quantity
-                matched_quantity = -quantity
-                self.push_unmatched(Trade(unmatched_quantity, matched_price))
-                remaining_quantity = 0
+                matched, unmatched = matched.split(-trade.quantity)
+                self.push_unmatched(unmatched)
+                next_trade = Trade(0, 0)
 
-            self.matched.append(
-                MatchedTrade(quantity, matched_price, price)
-            )
+            trade_cost = -trade.quantity * trade.price
+            matched_cost = -matched.quantity * matched.price
 
-            matched_cost = -matched_quantity * matched_price
-            trade_cost = -quantity * price
-
-            self.quantity -= matched_quantity
-            self.cost -= matched_cost
             self.realized += trade_cost + matched_cost
+            self.cost -= matched_cost
+            self.quantity += trade.quantity
 
-            quantity = remaining_quantity
+            self.matched.append(MatchedTrade(matched, trade))
 
-        if quantity != 0:
-            self.add(quantity, price)
+            trade = next_trade
+
+        if trade.quantity != 0:
+            self.add(trade)
 
     @abstractmethod
     def pop_unmatched(self) -> Trade:
