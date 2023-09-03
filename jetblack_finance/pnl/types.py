@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from decimal import Decimal
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Tuple, Union
 
 
 class ATrade(metaclass=ABCMeta):
@@ -42,6 +42,6 @@ class MatchedTrade(NamedTuple):
 class PnlStrip(NamedTuple):
     quantity: Decimal
     avg_cost: Decimal
-    price: Decimal
+    price: Union[Decimal, int]
     realized: Decimal
     unrealized: Decimal

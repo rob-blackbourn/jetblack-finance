@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from collections import deque
 from decimal import Decimal
-from typing import Deque, List, Optional
+from typing import Deque, List, Optional, Union
 
 from .types import (
     MatchedTrade,
@@ -44,10 +44,10 @@ class TradingPnl(metaclass=ABCMeta):
 
         return -self.cost / self.quantity
 
-    def unrealized(self, price: Decimal) -> Decimal:
+    def unrealized(self, price: Union[Decimal, int]) -> Decimal:
         return self.quantity * price + self.cost
 
-    def pnl(self, price: Decimal) -> PnlStrip:
+    def pnl(self, price: Union[Decimal, int]) -> PnlStrip:
         return PnlStrip(
             self.quantity,
             self.avg_cost,

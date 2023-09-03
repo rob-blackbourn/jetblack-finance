@@ -1,6 +1,7 @@
 """Tests for trading P&L"""
 
 from decimal import Decimal
+from typing import Union
 
 from jetblack_finance.pnl import (
     FifoTradingPnl,
@@ -11,13 +12,21 @@ from jetblack_finance.pnl import (
     ATrade,
 )
 
+Number = Union[Decimal, int]
+
+
+def _to_decimal(number: Number) -> Decimal:
+    if isinstance(number, Decimal):
+        return number
+    return Decimal(number)
+
 
 class Trade(ATrade):
     """A simple trade"""
 
-    def __init__(self, quantity: Decimal, price: Decimal) -> None:
-        self._quantity = quantity
-        self._price = price
+    def __init__(self, quantity: Number, price: Number) -> None:
+        self._quantity = _to_decimal(quantity)
+        self._price = _to_decimal(price)
 
     @property
     def quantity(self) -> Decimal:
@@ -46,17 +55,14 @@ def test_long_to_short_fifo_with_profit():
 
     trading_pnl = FifoTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(1), Decimal(100)))
-    trading_pnl.add(Trade(Decimal(-1), Decimal(102)))
+    trading_pnl.add(Trade(1, 100))
+    trading_pnl.add(Trade(-1, 102))
     assert trading_pnl.quantity == 0
     assert trading_pnl.cost == 0
     assert trading_pnl.realized == 2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(
-            Trade(Decimal(1), Decimal(100)),
-            Trade(Decimal(-1), Decimal(102))
-        )
+        MatchedTrade(Trade(1, 100), Trade(-1, 102))
     ]
 
 
@@ -65,17 +71,14 @@ def test_short_to_long_fifo_with_profit():
 
     trading_pnl = FifoTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(-1), Decimal(102)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(100)))
+    trading_pnl.add(Trade(-1, 102))
+    trading_pnl.add(Trade(1, 100))
     assert trading_pnl.quantity == 0
     assert trading_pnl.cost == 0
     assert trading_pnl.realized == 2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(
-            Trade(Decimal(-1), Decimal(102)),
-            Trade(Decimal(1), Decimal(100))
-        )
+        MatchedTrade(Trade(-1, 102), Trade(1, 100))
     ]
 
 
@@ -84,17 +87,14 @@ def test_long_to_short_fifo_with_loss():
 
     trading_pnl = FifoTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(1), Decimal(102)))
-    trading_pnl.add(Trade(Decimal(-1), Decimal(100)))
+    trading_pnl.add(Trade(1, 102))
+    trading_pnl.add(Trade(-1, 100))
     assert trading_pnl.quantity == 0
     assert trading_pnl.cost == 0
     assert trading_pnl.realized == -2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(
-            Trade(Decimal(1), Decimal(102)),
-            Trade(Decimal(-1), Decimal(100))
-        )
+        MatchedTrade(Trade(1, 102), Trade(-1, 100))
     ]
 
 
@@ -103,17 +103,14 @@ def test_short_to_long_fifo_with_loss():
 
     trading_pnl = FifoTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(-1), Decimal(100)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(102)))
+    trading_pnl.add(Trade(-1, 100))
+    trading_pnl.add(Trade(1, 102))
     assert trading_pnl.quantity == 0
     assert trading_pnl.cost == 0
     assert trading_pnl.realized == -2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(
-            Trade(Decimal(-1), Decimal(100)),
-            Trade(Decimal(1), Decimal(102))
-        )
+        MatchedTrade(Trade(-1, 100), Trade(1, 102))
     ]
 
 
@@ -121,17 +118,14 @@ def test_long_sell_fifo_through_flat():
 
     trading_pnl = FifoTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(1), Decimal(101)))
-    trading_pnl.add(Trade(Decimal(-2), Decimal(102)))
+    trading_pnl.add(Trade(1, 101))
+    trading_pnl.add(Trade(-2, 102))
     assert trading_pnl.quantity == -1
     assert trading_pnl.cost == 102
     assert trading_pnl.realized == 1
-    assert list(trading_pnl.unmatched) == [Trade(Decimal(-1), Decimal(102))]
+    assert list(trading_pnl.unmatched) == [Trade(-1, 102)]
     assert trading_pnl.matched == [
-        MatchedTrade(
-            Trade(Decimal(1), Decimal(101)),
-            Trade(Decimal(-1), Decimal(102))
-        )
+        MatchedTrade(Trade(1, 101), Trade(-1, 102))
     ]
 
 
@@ -139,17 +133,14 @@ def test_short_buy_fifo_through_flat():
 
     trading_pnl = FifoTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(-1), Decimal(102)))
-    trading_pnl.add(Trade(Decimal(2), Decimal(101)))
+    trading_pnl.add(Trade(-1, 102))
+    trading_pnl.add(Trade(2, 101))
     assert trading_pnl.quantity == 1
     assert trading_pnl.cost == -101
     assert trading_pnl.realized == 1
-    assert list(trading_pnl.unmatched) == [Trade(Decimal(1), Decimal(101))]
+    assert list(trading_pnl.unmatched) == [Trade(1, 101)]
     assert trading_pnl.matched == [
-        MatchedTrade(
-            Trade(Decimal(-1), Decimal(102)),
-            Trade(Decimal(1), Decimal(101))
-        )
+        MatchedTrade(Trade(-1, 102), Trade(1, 101))
     ]
 
 
@@ -157,25 +148,19 @@ def test_one_buy_many_sells_fifo():
 
     trading_pnl = FifoTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(10), Decimal(101)))
-    trading_pnl.add(Trade(Decimal(-5), Decimal(102)))
+    trading_pnl.add(Trade(10, 101))
+    trading_pnl.add(Trade(-5, 102))
     assert trading_pnl.quantity == 5
     assert trading_pnl.cost == -505
     assert trading_pnl.realized == 5
-    trading_pnl.add(Trade(Decimal(-5), Decimal(104)))
+    trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.quantity == 0
     assert trading_pnl.cost == 0
     assert trading_pnl.realized == 20
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(
-            Trade(Decimal(5), Decimal(101)),
-            Trade(Decimal(-5), Decimal(102))
-        ),
-        MatchedTrade(
-            Trade(Decimal(5), Decimal(101)),
-            Trade(Decimal(-5), Decimal(104))
-        ),
+        MatchedTrade(Trade(5, 101), Trade(-5, 102)),
+        MatchedTrade(Trade(5, 101), Trade(-5, 104)),
     ]
 
 
@@ -184,52 +169,47 @@ def test_pnl():
     trading_pnl = FifoTradingPnl()
 
     # Buy 10 @ 100
-    trading_pnl.add(Trade(Decimal(10), Decimal(100)))
-    assert trading_pnl.pnl(Decimal(100)) == (10, 100, 100, 0, 0)
+    trading_pnl.add(Trade(10, 100))
+    assert trading_pnl.pnl(100) == (10, 100, 100, 0, 0)
 
     # What is the P&L if the price goes to 102?
-    assert trading_pnl.pnl(Decimal(102)) == (10, 100.0, 102, 0, 20)
+    assert trading_pnl.pnl(102) == (10, 100.0, 102, 0, 20)
 
     # What if we buy another 5 at 102?
-    trading_pnl.add(Trade(Decimal(10), Decimal(102)))
-    assert trading_pnl.pnl(Decimal(102)) == (20, 101.0, 102, 0, 20)
+    trading_pnl.add(Trade(10, 102))
+    assert trading_pnl.pnl(102) == (20, 101.0, 102, 0, 20)
 
     # What is the P&L if the price goes to 104?
-    assert trading_pnl.pnl(Decimal(104)) == (20, 101.0, 104, 0, 60)
+    assert trading_pnl.pnl(104) == (20, 101.0, 104, 0, 60)
 
     # What if we sell 10 at 104?
-    trading_pnl.add(Trade(Decimal(-10), Decimal(104)))
-    assert trading_pnl.pnl(Decimal(104)) == (10, 102.0, 104, 40, 20)
+    trading_pnl.add(Trade(-10, 104))
+    assert trading_pnl.pnl(104) == (10, 102.0, 104, 40, 20)
 
     # What if the price drops to 102?
-    assert trading_pnl.pnl(Decimal(102)) == (10, 102.0, 102, 40, 0)
+    assert trading_pnl.pnl(102) == (10, 102.0, 102, 40, 0)
 
     # What if we sell 10 at 102?
-    trading_pnl.add(Trade(Decimal(-10), Decimal(102)))
-    assert trading_pnl.pnl(Decimal(102)) == (0, 0, 102, 40, 0)
+    trading_pnl.add(Trade(-10, 102))
+    assert trading_pnl.pnl(102) == (0, 0, 102, 40, 0)
 
 
 def test_many_buys_one_sell_fifo():
 
     trading_pnl = FifoTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(1), Decimal(100)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(102)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(101)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(104)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(103)))
-    trading_pnl.add(Trade(Decimal(-5), Decimal(104)))
+    trading_pnl.add(Trade(1, 100))
+    trading_pnl.add(Trade(1, 102))
+    trading_pnl.add(Trade(1, 101))
+    trading_pnl.add(Trade(1, 104))
+    trading_pnl.add(Trade(1, 103))
+    trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(Decimal(1), Decimal(100)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(102)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(101)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(104)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(103)),
-                     Trade(Decimal(-1), Decimal(104))),
+        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
     ]
 
 
@@ -237,23 +217,18 @@ def test_many_buys_one_sell_lifo():
 
     trading_pnl = LifoTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(1), Decimal(100)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(102)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(101)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(104)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(103)))
-    trading_pnl.add(Trade(Decimal(-5), Decimal(104)))
+    trading_pnl.add(Trade(1, 100))
+    trading_pnl.add(Trade(1, 102))
+    trading_pnl.add(Trade(1, 101))
+    trading_pnl.add(Trade(1, 104))
+    trading_pnl.add(Trade(1, 103))
+    trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(Decimal(1), Decimal(103)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(104)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(101)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(102)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(100)),
-                     Trade(Decimal(-1), Decimal(104))),
+        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
     ]
 
 
@@ -261,23 +236,18 @@ def test_many_buys_one_sell_best_price():
 
     trading_pnl = BestPriceTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(1), Decimal(100)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(102)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(101)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(104)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(103)))
-    trading_pnl.add(Trade(Decimal(-5), Decimal(104)))
+    trading_pnl.add(Trade(1, 100))
+    trading_pnl.add(Trade(1, 102))
+    trading_pnl.add(Trade(1, 101))
+    trading_pnl.add(Trade(1, 104))
+    trading_pnl.add(Trade(1, 103))
+    trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(Decimal(1), Decimal(100)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(101)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(102)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(103)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(104)),
-                     Trade(Decimal(-1), Decimal(104))),
+        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
     ]
 
 
@@ -285,23 +255,18 @@ def test_many_sells_one_buy_best_price():
 
     trading_pnl = BestPriceTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(-1), Decimal(100)))
-    trading_pnl.add(Trade(Decimal(-1), Decimal(102)))
-    trading_pnl.add(Trade(Decimal(-1), Decimal(101)))
-    trading_pnl.add(Trade(Decimal(-1), Decimal(104)))
-    trading_pnl.add(Trade(Decimal(-1), Decimal(103)))
-    trading_pnl.add(Trade(Decimal(5), Decimal(104)))
+    trading_pnl.add(Trade(-1, 100))
+    trading_pnl.add(Trade(-1, 102))
+    trading_pnl.add(Trade(-1, 101))
+    trading_pnl.add(Trade(-1, 104))
+    trading_pnl.add(Trade(-1, 103))
+    trading_pnl.add(Trade(5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(Decimal(-1), Decimal(104)),
-                     Trade(Decimal(1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(-1), Decimal(103)),
-                     Trade(Decimal(1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(-1), Decimal(102)),
-                     Trade(Decimal(1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(-1), Decimal(101)),
-                     Trade(Decimal(1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(-1), Decimal(100)),
-                     Trade(Decimal(1), Decimal(104))),
+        MatchedTrade(Trade(-1, 104), Trade(1, 104)),
+        MatchedTrade(Trade(-1, 103), Trade(1, 104)),
+        MatchedTrade(Trade(-1, 102), Trade(1, 104)),
+        MatchedTrade(Trade(-1, 101), Trade(1, 104)),
+        MatchedTrade(Trade(-1, 100), Trade(1, 104)),
     ]
 
 
@@ -309,23 +274,18 @@ def test_many_buys_one_sell_worst_price():
 
     trading_pnl = WorstPriceTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(1), Decimal(100)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(102)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(101)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(104)))
-    trading_pnl.add(Trade(Decimal(1), Decimal(103)))
-    trading_pnl.add(Trade(Decimal(-5), Decimal(104)))
+    trading_pnl.add(Trade(1, 100))
+    trading_pnl.add(Trade(1, 102))
+    trading_pnl.add(Trade(1, 101))
+    trading_pnl.add(Trade(1, 104))
+    trading_pnl.add(Trade(1, 103))
+    trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(Decimal(1), Decimal(104)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(103)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(102)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(101)),
-                     Trade(Decimal(-1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(1), Decimal(100)),
-                     Trade(Decimal(-1), Decimal(104))),
+        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
+        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
     ]
 
 
@@ -333,21 +293,16 @@ def test_many_sells_one_buy_worst_price():
 
     trading_pnl = WorstPriceTradingPnl()
 
-    trading_pnl.add(Trade(Decimal(-1), Decimal(100)))
-    trading_pnl.add(Trade(Decimal(-1), Decimal(102)))
-    trading_pnl.add(Trade(Decimal(-1), Decimal(101)))
-    trading_pnl.add(Trade(Decimal(-1), Decimal(104)))
-    trading_pnl.add(Trade(Decimal(-1), Decimal(103)))
-    trading_pnl.add(Trade(Decimal(5), Decimal(104)))
+    trading_pnl.add(Trade(-1, 100))
+    trading_pnl.add(Trade(-1, 102))
+    trading_pnl.add(Trade(-1, 101))
+    trading_pnl.add(Trade(-1, 104))
+    trading_pnl.add(Trade(-1, 103))
+    trading_pnl.add(Trade(5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(Decimal(-1), Decimal(100)),
-                     Trade(Decimal(1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(-1), Decimal(101)),
-                     Trade(Decimal(1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(-1), Decimal(102)),
-                     Trade(Decimal(1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(-1), Decimal(103)),
-                     Trade(Decimal(1), Decimal(104))),
-        MatchedTrade(Trade(Decimal(-1), Decimal(104)),
-                     Trade(Decimal(1), Decimal(104))),
+        MatchedTrade(Trade(-1, 100), Trade(1, 104)),
+        MatchedTrade(Trade(-1, 101), Trade(1, 104)),
+        MatchedTrade(Trade(-1, 102), Trade(1, 104)),
+        MatchedTrade(Trade(-1, 103), Trade(1, 104)),
+        MatchedTrade(Trade(-1, 104), Trade(1, 104)),
     ]
