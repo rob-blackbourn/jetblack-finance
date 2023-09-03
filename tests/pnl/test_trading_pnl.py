@@ -1,12 +1,19 @@
 """Tests for trading P&L"""
 
-from jetblack_finance.pnl import TradingPnl, MatchedTrade, Trade, MatchStyle
+from jetblack_finance.pnl import (
+    FifoTradingPnl,
+    LifoTradingPnl,
+    BestPriceTradingPnl,
+    WorstPriceTradingPnl,
+    MatchedTrade,
+    Trade,
+)
 
 
 def test_long_to_short_fifo_with_profit():
     """Buy 1 @ 100, then sell 1 @ 102 making 2"""
 
-    trading_pnl = TradingPnl(MatchStyle.FIFO)
+    trading_pnl = FifoTradingPnl()
 
     trading_pnl.add(1, 100)
     trading_pnl.add(-1, 102)
@@ -20,7 +27,7 @@ def test_long_to_short_fifo_with_profit():
 def test_short_to_long_fifo_with_profit():
     """Sell 1 @ 102, then buy back 1 @ 101 making 2"""
 
-    trading_pnl = TradingPnl(MatchStyle.FIFO)
+    trading_pnl = FifoTradingPnl()
 
     trading_pnl.add(-1, 102)
     trading_pnl.add(1, 100)
@@ -34,7 +41,7 @@ def test_short_to_long_fifo_with_profit():
 def test_long_to_short_fifo_with_loss():
     """Buy 1 @ 102, then sell 1 @ 100 loosing 2"""
 
-    trading_pnl = TradingPnl(MatchStyle.FIFO)
+    trading_pnl = FifoTradingPnl()
 
     trading_pnl.add(1, 102)
     trading_pnl.add(-1, 100)
@@ -48,7 +55,7 @@ def test_long_to_short_fifo_with_loss():
 def test_short_to_long_fifo_with_loss():
     """Sell 1 @ 100, then buy back 1 @ 102 loosing 2"""
 
-    trading_pnl = TradingPnl(MatchStyle.FIFO)
+    trading_pnl = FifoTradingPnl()
 
     trading_pnl.add(-1, 100)
     trading_pnl.add(1, 102)
@@ -61,7 +68,7 @@ def test_short_to_long_fifo_with_loss():
 
 def test_long_sell_fifo_through_flat():
 
-    trading_pnl = TradingPnl(MatchStyle.FIFO)
+    trading_pnl = FifoTradingPnl()
 
     trading_pnl.add(1, 101)
     trading_pnl.add(-2, 102)
@@ -74,7 +81,7 @@ def test_long_sell_fifo_through_flat():
 
 def test_short_buy_fifo_through_flat():
 
-    trading_pnl = TradingPnl(MatchStyle.FIFO)
+    trading_pnl = FifoTradingPnl()
 
     trading_pnl.add(-1, 102)
     trading_pnl.add(2, 101)
@@ -87,7 +94,7 @@ def test_short_buy_fifo_through_flat():
 
 def test_one_buy_many_sells_fifo():
 
-    trading_pnl = TradingPnl(MatchStyle.FIFO)
+    trading_pnl = FifoTradingPnl()
 
     trading_pnl.add(10, 101)
     trading_pnl.add(-5, 102)
@@ -107,7 +114,7 @@ def test_one_buy_many_sells_fifo():
 
 def test_pnl():
 
-    trading_pnl = TradingPnl(MatchStyle.FIFO)
+    trading_pnl = FifoTradingPnl()
 
     # Buy 10 @ 100
     trading_pnl.add(10, 100)
@@ -137,7 +144,7 @@ def test_pnl():
 
 def test_many_buys_one_sell_fifo():
 
-    trading_pnl = TradingPnl(MatchStyle.FIFO)
+    trading_pnl = FifoTradingPnl()
 
     trading_pnl.add(1, 100)
     trading_pnl.add(1, 102)
@@ -156,7 +163,7 @@ def test_many_buys_one_sell_fifo():
 
 def test_many_buys_one_sell_lifo():
 
-    trading_pnl = TradingPnl(MatchStyle.LIFO)
+    trading_pnl = LifoTradingPnl()
 
     trading_pnl.add(1, 100)
     trading_pnl.add(1, 102)
@@ -175,7 +182,7 @@ def test_many_buys_one_sell_lifo():
 
 def test_many_buys_one_sell_best_price():
 
-    trading_pnl = TradingPnl(MatchStyle.BEST_PRICE)
+    trading_pnl = BestPriceTradingPnl()
 
     trading_pnl.add(1, 100)
     trading_pnl.add(1, 102)
@@ -194,7 +201,7 @@ def test_many_buys_one_sell_best_price():
 
 def test_many_sells_one_buy_best_price():
 
-    trading_pnl = TradingPnl(MatchStyle.BEST_PRICE)
+    trading_pnl = BestPriceTradingPnl()
 
     trading_pnl.add(-1, 100)
     trading_pnl.add(-1, 102)
@@ -213,7 +220,7 @@ def test_many_sells_one_buy_best_price():
 
 def test_many_buys_one_sell_worst_price():
 
-    trading_pnl = TradingPnl(MatchStyle.WORST_PRICE)
+    trading_pnl = WorstPriceTradingPnl()
 
     trading_pnl.add(1, 100)
     trading_pnl.add(1, 102)
@@ -232,7 +239,7 @@ def test_many_buys_one_sell_worst_price():
 
 def test_many_sells_one_buy_worst_price():
 
-    trading_pnl = TradingPnl(MatchStyle.WORST_PRICE)
+    trading_pnl = WorstPriceTradingPnl()
 
     trading_pnl.add(-1, 100)
     trading_pnl.add(-1, 102)
