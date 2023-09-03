@@ -8,8 +8,37 @@ from jetblack_finance.pnl import (
     BestPriceTradingPnl,
     WorstPriceTradingPnl,
     MatchedTrade,
-    Trade,
+    ATrade,
 )
+
+
+class Trade(ATrade):
+    """A simple trade"""
+
+    def __init__(self, quantity: Decimal, price: Decimal) -> None:
+        self._quantity = quantity
+        self._price = price
+
+    @property
+    def quantity(self) -> Decimal:
+        return self._quantity
+
+    @property
+    def price(self) -> Decimal:
+        return self._price
+
+    def make_trade(self, quantity: Decimal) -> ATrade:
+        return Trade(quantity, self.price)
+
+    def __eq__(self, value: object) -> bool:
+        return (
+            isinstance(value, Trade) and
+            value.quantity == self.quantity and
+            value.price == self.price
+        )
+
+    def __repr__(self) -> str:
+        return f"Trade(quantity={self.quantity},price={self.price})"
 
 
 def test_long_to_short_fifo_with_profit():

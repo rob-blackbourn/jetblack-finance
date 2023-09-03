@@ -2,32 +2,40 @@
 
 from __future__ import annotations
 
+from abc import ABCMeta, abstractmethod
 from decimal import Decimal
 from typing import NamedTuple, Tuple
 
 
-class Trade(NamedTuple):
-    """A simple trade"""
+class ATrade(metaclass=ABCMeta):
 
-    quantity: Decimal
-    """The signed quantity where a positive value is a buy"""
+    @property
+    @abstractmethod
+    def quantity(self) -> Decimal:
+        ...
 
-    price: Decimal
-    """The price"""
+    @property
+    @abstractmethod
+    def price(self) -> Decimal:
+        ...
 
-    def split(self, quantity: Decimal) -> Tuple[Trade, Trade]:
-        matched = Trade(quantity, self.price)
-        unmatched = Trade(self.quantity-quantity, self.price)
+    @abstractmethod
+    def make_trade(self, quantity: Decimal) -> ATrade:
+        ...
+
+    def split(self, quantity: Decimal) -> Tuple[ATrade, ATrade]:
+        matched = self.make_trade(quantity)
+        unmatched = self.make_trade(self.quantity - quantity)
         return matched, unmatched
 
 
 class MatchedTrade(NamedTuple):
     """A matched trade"""
 
-    opening: Trade
+    opening: ATrade
     """The opening trade"""
 
-    closing: Trade
+    closing: ATrade
     """The closing trade"""
 
 
