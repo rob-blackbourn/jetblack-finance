@@ -8,7 +8,6 @@ from typing import Deque, List
 
 from .types import (
     MatchedTrade,
-    MatchStyle,
     Trade,
     PnlStrip
 )

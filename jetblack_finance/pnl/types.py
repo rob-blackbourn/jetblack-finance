@@ -1,23 +1,6 @@
 """Types"""
 
-from enum import Enum, auto
 from typing import NamedTuple
-
-
-class MatchStyle(Enum):
-    """How to choose a trade to match against"""
-
-    FIFO = auto()
-    """First in first out - take the oldest"""
-
-    LIFO = auto()
-    """Last in last out - take the newest"""
-
-    BEST_PRICE = auto()
-    """When long take the lowest price, when short take the highest"""
-
-    WORST_PRICE = auto()
-    """When long take the highest price, when short take the lowest"""
 
 
 class Trade(NamedTuple):
