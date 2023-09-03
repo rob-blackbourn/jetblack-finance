@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from collections import deque
 from decimal import Decimal
-from typing import Deque, List, Optional, Union
+from typing import Deque, List, Optional, Tuple, Union
 
 from .types import (
     MatchedTrade,
@@ -61,16 +61,21 @@ class TradingPnl(metaclass=ABCMeta):
         self.quantity += trade.quantity
         self.unmatched.append(trade)
 
+    def _match(self, trade: ATrade) -> Tuple[ATrade, ATrade, Optional[ATrade]]:
+        matched = self.pop_unmatched()
+
+        if abs(matched.quantity) <= abs(trade.quantity):
+            trade, next_trade = trade.split(-matched.quantity)
+        else:
+            matched, unmatched = matched.split(-trade.quantity)
+            self.push_unmatched(unmatched)
+            next_trade = None
+
+        return trade, matched, next_trade
+
     def _reduce_position(self, trade: Optional[ATrade]) -> None:
         while trade is not None and trade.quantity != 0 and self.unmatched:
-            matched = self.pop_unmatched()
-
-            if abs(matched.quantity) <= abs(trade.quantity):
-                trade, next_trade = trade.split(-matched.quantity)
-            else:
-                matched, unmatched = matched.split(-trade.quantity)
-                self.push_unmatched(unmatched)
-                next_trade = None
+            trade, matched, next_trade = self._match(trade)
 
             trade_cost = -trade.quantity * trade.price
             matched_cost = -matched.quantity * matched.price
