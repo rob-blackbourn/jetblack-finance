@@ -61,32 +61,44 @@ class TradingPnl(metaclass=ABCMeta):
         self.quantity += trade.quantity
         self.unmatched.append(trade)
 
-    def _match(self, trade: ATrade) -> Tuple[ATrade, ATrade, Optional[ATrade]]:
-        matched = self.pop_unmatched()
+    def _match(self, trade_candidate: ATrade) -> Tuple[ATrade, ATrade, Optional[ATrade]]:
+        match_candidate = self.pop_unmatched()
 
-        if abs(matched.quantity) <= abs(trade.quantity):
-            trade, next_trade = trade.split(-matched.quantity)
+        if abs(trade_candidate.quantity) >= abs(match_candidate.quantity):
+            # Split the candidate trade to match the quantity. This leaves a
+            # remaining trade to match.
+            trade, remaining_trade = trade_candidate.split(
+                -match_candidate.quantity
+            )
+            # The matching trade is the whole of the candidate.
+            match = match_candidate
         else:
-            matched, unmatched = matched.split(-trade.quantity)
-            self.push_unmatched(unmatched)
-            next_trade = None
+            # The trade is the entire candidate trade. There is no remaining
+            # trade.
+            trade, remaining_trade = trade_candidate, None
+            # Split the candidate match by the smaller trade quantity, and
+            # return the remaining unmatched.
+            match, remaining_unmatched = match_candidate.split(
+                -trade_candidate.quantity
+            )
+            self.push_unmatched(remaining_unmatched)
 
-        return trade, matched, next_trade
+        return trade, match, remaining_trade
 
     def _reduce_position(self, trade: Optional[ATrade]) -> None:
         while trade is not None and trade.quantity != 0 and self.unmatched:
-            trade, matched, next_trade = self._match(trade)
+            trade, match, remaining_trade = self._match(trade)
 
-            trade_cost = -trade.quantity * trade.price
-            matched_cost = -matched.quantity * matched.price
+            trade_cost = -(trade.quantity * trade.price)
+            match_cost = -(match.quantity * match.price)
 
-            self.realized += trade_cost + matched_cost
-            self.cost -= matched_cost
+            self.realized += trade_cost + match_cost
+            self.cost -= match_cost
             self.quantity += trade.quantity
 
-            self.matched.append(MatchedTrade(matched, trade))
+            self.matched.append(MatchedTrade(match, trade))
 
-            trade = next_trade
+            trade = remaining_trade
 
         if trade is not None and trade.quantity != 0:
             self.add(trade)
