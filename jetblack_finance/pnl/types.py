@@ -50,6 +50,10 @@ class UnmatchedTrade:
     def __eq__(self, value: object) -> bool:
         return isinstance(value, UnmatchedTrade) and self._trade == self._trade
 
+    def __repr__(self) -> str:
+        return f"[{self._version}] {self._trade!r}"
+        # return f"UnmatchedTrade({self._trade!r},version={self._version})"
+
 
 class MatchedTrade(NamedTuple):
     """A matched trade"""

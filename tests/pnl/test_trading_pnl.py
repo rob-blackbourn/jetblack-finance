@@ -48,7 +48,8 @@ class Trade(ITrade):
         )
 
     def __repr__(self) -> str:
-        return f"Trade(quantity={self.quantity},price={self.price})"
+        return f"{self.quantity} @ {self.price}"
+        # return f"Trade(quantity={self.quantity},price={self.price})"
 
 
 def test_long_to_short_fifo_with_profit():
