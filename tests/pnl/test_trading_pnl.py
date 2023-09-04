@@ -582,3 +582,14 @@ def test_many_sells_one_buy_worst_price():
             ScaledTrade(Trade(5, 104), 1)
         ),
     ]
+
+
+def test_fraction_quantities():
+
+    trading_pnl = FifoTradingPnl()
+
+    trading_pnl.add(Trade(Decimal("10.17"), Decimal("2.54")))
+    trading_pnl.add(Trade(Decimal("-8.17"), Decimal("2.12")))
+    assert trading_pnl.quantity == 2
+    trading_pnl.add(Trade(Decimal("-1.5"), Decimal("2.05")))
+    assert trading_pnl.quantity == Decimal("0.5")
