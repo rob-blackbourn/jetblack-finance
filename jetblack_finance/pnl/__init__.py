@@ -1,6 +1,9 @@
 """pnl"""
 
-from .types import MatchedTrade, PnlStrip, ITrade
+from .itrade import ITrade
+from .matched_trade import MatchedTrade
+from .pnl_strip import PnlStrip
+from .scaled_trade import ScaledTrade
 from .trading_pnl import (
     TradingPnl,
     FifoTradingPnl,
@@ -10,9 +13,14 @@ from .trading_pnl import (
 )
 
 __all__ = [
-    'MatchedTrade',
-    'PnlStrip',
     'ITrade',
+
+    'MatchedTrade',
+
+    'PnlStrip',
+
+    'ScaledTrade',
+
     'TradingPnl',
     'FifoTradingPnl',
     'LifoTradingPnl',

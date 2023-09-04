@@ -7,12 +7,10 @@ from collections import deque
 from decimal import Decimal
 from typing import Deque, List, Optional, Tuple, Union
 
-from .types import (
-    MatchedTrade,
-    ITrade,
-    ScaledTrade,
-    PnlStrip
-)
+from .itrade import ITrade
+from .matched_trade import MatchedTrade
+from .scaled_trade import ScaledTrade
+from .pnl_strip import PnlStrip
 
 
 class TradingPnl(metaclass=ABCMeta):

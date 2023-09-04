@@ -4,21 +4,10 @@ from __future__ import annotations
 
 from decimal import Decimal
 from fractions import Fraction
-from typing import NamedTuple, Protocol, Tuple, Union, Optional
+from typing import Tuple, Union, Optional
 
 
-class ITrade(Protocol):
-
-    @property
-    def quantity(self) -> Decimal:
-        ...
-
-    @property
-    def price(self) -> Decimal:
-        ...
-
-    def make_trade(self, quantity: Decimal) -> ITrade:
-        ...
+from .itrade import ITrade
 
 
 class ScaledTrade:
@@ -66,24 +55,3 @@ class ScaledTrade:
 
     def __repr__(self) -> str:
         return f"{self.quantity} (of {self._trade.quantity}) @ {self.trade.price}"
-
-
-class MatchedTrade(NamedTuple):
-    """A matched trade"""
-
-    opening: ScaledTrade
-    """The opening trade"""
-
-    closing: ScaledTrade
-    """The closing trade"""
-
-    def __repr__(self) -> str:
-        return f"{self.opening!r} / {self.closing!r}"
-
-
-class PnlStrip(NamedTuple):
-    quantity: Decimal
-    avg_cost: Decimal
-    price: Union[Decimal, int]
-    realized: Decimal
-    unrealized: Decimal

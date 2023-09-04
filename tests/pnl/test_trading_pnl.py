@@ -11,7 +11,7 @@ from jetblack_finance.pnl import (
     MatchedTrade,
     ITrade,
 )
-from jetblack_finance.pnl.types import ScaledTrade
+from jetblack_finance.pnl.pnl_strip import ScaledTrade
 
 Number = Union[Decimal, int]
 
