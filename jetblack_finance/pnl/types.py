@@ -2,37 +2,46 @@
 
 from __future__ import annotations
 
-from typing import NamedTuple, Tuple
+from abc import ABCMeta, abstractmethod
+from decimal import Decimal
+from typing import NamedTuple, Tuple, Union
 
 
-class Trade(NamedTuple):
-    """A simple trade"""
+class ATrade(metaclass=ABCMeta):
 
-    quantity: int
-    """The signed quantity where a positive value is a buy"""
+    @property
+    @abstractmethod
+    def quantity(self) -> Decimal:
+        ...
 
-    price: float
-    """The price"""
+    @property
+    @abstractmethod
+    def price(self) -> Decimal:
+        ...
 
-    def split(self, quantity: int) -> Tuple[Trade, Trade]:
-        matched = Trade(quantity, self.price)
-        unmatched = Trade(self.quantity-quantity, self.price)
+    @abstractmethod
+    def make_trade(self, quantity: Decimal) -> ATrade:
+        ...
+
+    def split(self, quantity: Decimal) -> Tuple[ATrade, ATrade]:
+        matched = self.make_trade(quantity)
+        unmatched = self.make_trade(self.quantity - quantity)
         return matched, unmatched
 
 
 class MatchedTrade(NamedTuple):
     """A matched trade"""
 
-    opening: Trade
+    opening: ATrade
     """The opening trade"""
 
-    closing: Trade
+    closing: ATrade
     """The closing trade"""
 
 
 class PnlStrip(NamedTuple):
-    quantity: int
-    avg_cost: float
-    price: float
-    realized: float
-    unrealized: float
+    quantity: Decimal
+    avg_cost: Decimal
+    price: Union[Decimal, int]
+    realized: Decimal
+    unrealized: Decimal
