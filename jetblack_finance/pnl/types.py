@@ -21,11 +21,15 @@ class ITrade(Protocol):
         ...
 
 
-class UnmatchedTrade:
+class ScaledTrade:
 
-    def __init__(self, trade: ITrade, quantity: Optional[Union[Decimal, int]] = None) -> None:
+    def __init__(
+            self,
+            trade: ITrade,
+            quantity: Optional[Union[Decimal, int]] = None
+    ) -> None:
         self._trade = trade
-        self._fraction = (
+        self._scale = (
             Fraction(quantity) / Fraction(trade.quantity)
             if quantity is not None
             else Fraction(1)
@@ -33,7 +37,7 @@ class UnmatchedTrade:
 
     @property
     def quantity(self) -> Decimal:
-        quantity = Fraction(self._trade.quantity) * self._fraction
+        quantity = Fraction(self._trade.quantity) * self._scale
         return Decimal(quantity.numerator) / Decimal(quantity.denominator)
 
     @property
@@ -44,18 +48,18 @@ class UnmatchedTrade:
     def trade(self) -> ITrade:
         return self._trade
 
-    def split(self, quantity: Decimal) -> Tuple[UnmatchedTrade, UnmatchedTrade]:
+    def split(self, quantity: Decimal) -> Tuple[ScaledTrade, ScaledTrade]:
         if abs(quantity) > abs(self.quantity):
             raise ValueError("invalid quantity")
-        matched = UnmatchedTrade(self._trade, quantity)
-        unmatched = UnmatchedTrade(self._trade, self.quantity - quantity)
+        matched = ScaledTrade(self._trade, quantity)
+        unmatched = ScaledTrade(self._trade, self.quantity - quantity)
         return matched, unmatched
 
     def __eq__(self, value: object) -> bool:
         return (
-            isinstance(value, UnmatchedTrade) and
+            isinstance(value, ScaledTrade) and
             self._trade == value._trade and
-            self._fraction == value._fraction
+            self._scale == value._scale
         )
 
     def __repr__(self) -> str:
@@ -65,10 +69,10 @@ class UnmatchedTrade:
 class MatchedTrade(NamedTuple):
     """A matched trade"""
 
-    opening: UnmatchedTrade
+    opening: ScaledTrade
     """The opening trade"""
 
-    closing: UnmatchedTrade
+    closing: ScaledTrade
     """The closing trade"""
 
     def __repr__(self) -> str:
