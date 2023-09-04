@@ -61,44 +61,51 @@ class TradingPnl(metaclass=ABCMeta):
         self.quantity += trade.quantity
         self.unmatched.append(trade)
 
-    def _match(self, trade_candidate: ATrade) -> Tuple[ATrade, ATrade, Optional[ATrade]]:
+    def _find_match(self, trade_candidate: ATrade) -> Tuple[ATrade, ATrade, Optional[ATrade]]:
         match_candidate = self.pop_unmatched()
 
         if abs(trade_candidate.quantity) >= abs(match_candidate.quantity):
             # Split the candidate trade to match the quantity. This leaves a
             # remaining trade to match.
-            trade, remaining_trade = trade_candidate.split(
+            close_trade, trade = trade_candidate.split(
                 -match_candidate.quantity
             )
             # The matching trade is the whole of the candidate.
-            match = match_candidate
+            open_trade = match_candidate
         else:
             # The trade is the entire candidate trade. There is no remaining
             # trade.
-            trade, remaining_trade = trade_candidate, None
+            close_trade, trade = trade_candidate, None
             # Split the candidate match by the smaller trade quantity, and
             # return the remaining unmatched.
-            match, remaining_unmatched = match_candidate.split(
+            open_trade, remaining_unmatched = match_candidate.split(
                 -trade_candidate.quantity
             )
             self.push_unmatched(remaining_unmatched)
 
-        return trade, match, remaining_trade
+        return close_trade, open_trade, trade
+
+    def _match(self, trade: ATrade) -> Optional[ATrade]:
+        close_trade, open_trade, remainder = self._find_match(trade)
+
+        # Note that the open will have the opposite sign to the close.
+        close_value = close_trade.quantity * close_trade.price
+        open_cost = -(open_trade.quantity * open_trade.price)
+
+        # The difference between the two costs is the realised value.
+        self.realized -= close_value - open_cost
+        # Remove the cost.
+        self.cost -= open_cost
+        # Remove the quantity.
+        self.quantity -= open_trade.quantity
+
+        self.matched.append(MatchedTrade(open_trade, close_trade))
+
+        return remainder
 
     def _reduce_position(self, trade: Optional[ATrade]) -> None:
         while trade is not None and trade.quantity != 0 and self.unmatched:
-            trade, match, remaining_trade = self._match(trade)
-
-            trade_cost = -(trade.quantity * trade.price)
-            match_cost = -(match.quantity * match.price)
-
-            self.realized += trade_cost + match_cost
-            self.cost -= match_cost
-            self.quantity += trade.quantity
-
-            self.matched.append(MatchedTrade(match, trade))
-
-            trade = remaining_trade
+            trade = self._match(trade)
 
         if trade is not None and trade.quantity != 0:
             self.add(trade)
