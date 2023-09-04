@@ -9,8 +9,9 @@ from jetblack_finance.pnl import (
     BestPriceTradingPnl,
     WorstPriceTradingPnl,
     MatchedTrade,
-    ATrade,
+    ITrade,
 )
+from jetblack_finance.pnl.pnl_strip import ScaledTrade
 
 Number = Union[Decimal, int]
 
@@ -21,7 +22,7 @@ def _to_decimal(number: Number) -> Decimal:
     return Decimal(number)
 
 
-class Trade(ATrade):
+class Trade(ITrade):
     """A simple trade"""
 
     def __init__(self, quantity: Number, price: Number) -> None:
@@ -36,7 +37,7 @@ class Trade(ATrade):
     def price(self) -> Decimal:
         return self._price
 
-    def make_trade(self, quantity: Decimal) -> ATrade:
+    def make_trade(self, quantity: Decimal) -> ITrade:
         return Trade(quantity, self.price)
 
     def __eq__(self, value: object) -> bool:
@@ -47,7 +48,164 @@ class Trade(ATrade):
         )
 
     def __repr__(self) -> str:
-        return f"Trade(quantity={self.quantity},price={self.price})"
+        return f"{self.quantity} @ {self.price}"
+        # return f"Trade(quantity={self.quantity},price={self.price})"
+
+
+def test_long_to_short_with_splits_best_price():
+    """long to short, splits, best price"""
+
+    trading_pnl = BestPriceTradingPnl()
+
+    assert trading_pnl.quantity == 0
+    assert trading_pnl.cost == 0
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 0
+
+    buy_6_at_100 = Trade(6, 100)
+    trading_pnl.add(buy_6_at_100)
+    assert trading_pnl.quantity == 6
+    assert trading_pnl.cost == -600
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 100
+
+    buy_6_at_106 = Trade(6, 106)
+    trading_pnl.add(buy_6_at_106)
+    assert trading_pnl.quantity == 12
+    assert trading_pnl.cost == -1236
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    buy_6_at_103 = Trade(6, 103)
+    trading_pnl.add(buy_6_at_103)
+    assert trading_pnl.quantity == 18
+    assert trading_pnl.cost == -1854
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    sell_9_at_105 = Trade(-9, 105)
+    trading_pnl.add(sell_9_at_105)
+    assert trading_pnl.quantity == 9
+    assert trading_pnl.cost == -945
+    assert trading_pnl.realized == 36
+    assert trading_pnl.avg_cost == 105
+
+
+def test_long_to_short_with_splits_worst_price():
+    """long to short, splits, worst price"""
+
+    trading_pnl = WorstPriceTradingPnl()
+
+    assert trading_pnl.quantity == 0
+    assert trading_pnl.cost == 0
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 0
+
+    buy_6_at_100 = Trade(6, 100)
+    trading_pnl.add(buy_6_at_100)
+    assert trading_pnl.quantity == 6
+    assert trading_pnl.cost == -600
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 100
+
+    buy_6_at_106 = Trade(6, 106)
+    trading_pnl.add(buy_6_at_106)
+    assert trading_pnl.quantity == 12
+    assert trading_pnl.cost == -1236
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    buy_6_at_103 = Trade(6, 103)
+    trading_pnl.add(buy_6_at_103)
+    assert trading_pnl.quantity == 18
+    assert trading_pnl.cost == -1854
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    sell_9_at_105 = Trade(-9, 105)
+    trading_pnl.add(sell_9_at_105)
+    assert trading_pnl.quantity == 9
+    assert trading_pnl.cost == -909
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 101
+
+
+def test_long_to_short_with_splits_fifo():
+    """long to short, splits, fifo"""
+
+    trading_pnl = FifoTradingPnl()
+
+    assert trading_pnl.quantity == 0
+    assert trading_pnl.cost == 0
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 0
+
+    buy_6_at_100 = Trade(6, 100)
+    trading_pnl.add(buy_6_at_100)
+    assert trading_pnl.quantity == 6
+    assert trading_pnl.cost == -600
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 100
+
+    buy_6_at_106 = Trade(6, 106)
+    trading_pnl.add(buy_6_at_106)
+    assert trading_pnl.quantity == 12
+    assert trading_pnl.cost == -1236
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    buy_6_at_103 = Trade(6, 103)
+    trading_pnl.add(buy_6_at_103)
+    assert trading_pnl.quantity == 18
+    assert trading_pnl.cost == -1854
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    sell_9_at_105 = Trade(-9, 105)
+    trading_pnl.add(sell_9_at_105)
+    assert trading_pnl.quantity == 9
+    assert trading_pnl.cost == -936
+    assert trading_pnl.realized == 27
+    assert trading_pnl.avg_cost == 104
+
+
+def test_long_to_short_with_splits_lifo():
+    """long to short, splits, fifo"""
+
+    trading_pnl = LifoTradingPnl()
+
+    assert trading_pnl.quantity == 0
+    assert trading_pnl.cost == 0
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 0
+
+    buy_6_at_100 = Trade(6, 100)
+    trading_pnl.add(buy_6_at_100)
+    assert trading_pnl.quantity == 6
+    assert trading_pnl.cost == -600
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 100
+
+    buy_6_at_106 = Trade(6, 106)
+    trading_pnl.add(buy_6_at_106)
+    assert trading_pnl.quantity == 12
+    assert trading_pnl.cost == -1236
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    buy_6_at_103 = Trade(6, 103)
+    trading_pnl.add(buy_6_at_103)
+    assert trading_pnl.quantity == 18
+    assert trading_pnl.cost == -1854
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    sell_9_at_105 = Trade(-9, 105)
+    trading_pnl.add(sell_9_at_105)
+    assert trading_pnl.quantity == 9
+    assert trading_pnl.cost == -918
+    assert trading_pnl.realized == 9
+    assert trading_pnl.avg_cost == 102
 
 
 def test_long_to_short_fifo_with_profit():
@@ -62,7 +220,10 @@ def test_long_to_short_fifo_with_profit():
     assert trading_pnl.realized == 2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 100), Trade(-1, 102))
+        MatchedTrade(
+            ScaledTrade(Trade(1, 100)),
+            ScaledTrade(Trade(-1, 102))
+        )
     ]
 
 
@@ -78,7 +239,10 @@ def test_short_to_long_fifo_with_profit():
     assert trading_pnl.realized == 2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(-1, 102), Trade(1, 100))
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 102)),
+            ScaledTrade(Trade(1, 100))
+        )
     ]
 
 
@@ -94,7 +258,10 @@ def test_long_to_short_fifo_with_loss():
     assert trading_pnl.realized == -2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 102), Trade(-1, 100))
+        MatchedTrade(
+            ScaledTrade(Trade(1, 102)),
+            ScaledTrade(Trade(-1, 100))
+        )
     ]
 
 
@@ -110,7 +277,10 @@ def test_short_to_long_fifo_with_loss():
     assert trading_pnl.realized == -2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(-1, 100), Trade(1, 102))
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 100)),
+            ScaledTrade(Trade(1, 102))
+        )
     ]
 
 
@@ -123,9 +293,14 @@ def test_long_sell_fifo_through_flat():
     assert trading_pnl.quantity == -1
     assert trading_pnl.cost == 102
     assert trading_pnl.realized == 1
-    assert list(trading_pnl.unmatched) == [Trade(-1, 102)]
+    assert list(trading_pnl.unmatched) == [
+        ScaledTrade(Trade(-2, 102), -1)
+    ]
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 101), Trade(-1, 102))
+        MatchedTrade(
+            ScaledTrade(Trade(1, 101), 1),
+            ScaledTrade(Trade(-2, 102), -1)
+        )
     ]
 
 
@@ -138,9 +313,14 @@ def test_short_buy_fifo_through_flat():
     assert trading_pnl.quantity == 1
     assert trading_pnl.cost == -101
     assert trading_pnl.realized == 1
-    assert list(trading_pnl.unmatched) == [Trade(1, 101)]
+    assert list(trading_pnl.unmatched) == [
+        ScaledTrade(Trade(2, 101), 1)
+    ]
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(-1, 102), Trade(1, 101))
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 102), -1),
+            ScaledTrade(Trade(2, 101), 1)
+        )
     ]
 
 
@@ -159,8 +339,14 @@ def test_one_buy_many_sells_fifo():
     assert trading_pnl.realized == 20
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(5, 101), Trade(-5, 102)),
-        MatchedTrade(Trade(5, 101), Trade(-5, 104)),
+        MatchedTrade(
+            ScaledTrade(Trade(10, 101), 5),
+            ScaledTrade(Trade(-5, 102), -5)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(10, 101), 5),
+            ScaledTrade(Trade(-5, 104), -5)
+        ),
     ]
 
 
@@ -205,11 +391,26 @@ def test_many_buys_one_sell_fifo():
     trading_pnl.add(Trade(1, 103))
     trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 100), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 102), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 101), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 104), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 103), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
     ]
 
 
@@ -224,11 +425,26 @@ def test_many_buys_one_sell_lifo():
     trading_pnl.add(Trade(1, 103))
     trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 103), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 104), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 101), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 102), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 100), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
     ]
 
 
@@ -243,11 +459,26 @@ def test_many_buys_one_sell_best_price():
     trading_pnl.add(Trade(1, 103))
     trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 100), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 101), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 102), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 103), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 104), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
     ]
 
 
@@ -262,11 +493,26 @@ def test_many_sells_one_buy_best_price():
     trading_pnl.add(Trade(-1, 103))
     trading_pnl.add(Trade(5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(-1, 104), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 103), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 102), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 101), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 100), Trade(1, 104)),
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 104), -1),
+            ScaledTrade(Trade(5, 104), 1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 103), -1),
+            ScaledTrade(Trade(5, 104), 1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 102), -1),
+            ScaledTrade(Trade(5, 104), 1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 101), -1),
+            ScaledTrade(Trade(5, 104), 1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 100), -1),
+            ScaledTrade(Trade(5, 104), 1)
+        ),
     ]
 
 
@@ -281,11 +527,26 @@ def test_many_buys_one_sell_worst_price():
     trading_pnl.add(Trade(1, 103))
     trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 104), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 103), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 102), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 101), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(1, 100), 1),
+            ScaledTrade(Trade(-5, 104), -1)
+        ),
     ]
 
 
@@ -300,9 +561,35 @@ def test_many_sells_one_buy_worst_price():
     trading_pnl.add(Trade(-1, 103))
     trading_pnl.add(Trade(5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(-1, 100), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 101), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 102), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 103), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 104), Trade(1, 104)),
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 100), -1),
+            ScaledTrade(Trade(5, 104), 1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 101), -1),
+            ScaledTrade(Trade(5, 104), 1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 102), -1),
+            ScaledTrade(Trade(5, 104), 1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 103), -1),
+            ScaledTrade(Trade(5, 104), 1)
+        ),
+        MatchedTrade(
+            ScaledTrade(Trade(-1, 104), -1),
+            ScaledTrade(Trade(5, 104), 1)
+        ),
     ]
+
+
+def test_fraction_quantities():
+
+    trading_pnl = FifoTradingPnl()
+
+    trading_pnl.add(Trade(Decimal("10.17"), Decimal("2.54")))
+    trading_pnl.add(Trade(Decimal("-8.17"), Decimal("2.12")))
+    assert trading_pnl.quantity == 2
+    trading_pnl.add(Trade(Decimal("-1.5"), Decimal("2.05")))
+    assert trading_pnl.quantity == Decimal("0.5")
