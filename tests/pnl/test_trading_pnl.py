@@ -9,8 +9,9 @@ from jetblack_finance.pnl import (
     BestPriceTradingPnl,
     WorstPriceTradingPnl,
     MatchedTrade,
-    ATrade,
+    ITrade,
 )
+from jetblack_finance.pnl.types import UnmatchedTrade
 
 Number = Union[Decimal, int]
 
@@ -21,7 +22,7 @@ def _to_decimal(number: Number) -> Decimal:
     return Decimal(number)
 
 
-class Trade(ATrade):
+class Trade(ITrade):
     """A simple trade"""
 
     def __init__(self, quantity: Number, price: Number) -> None:
@@ -36,7 +37,7 @@ class Trade(ATrade):
     def price(self) -> Decimal:
         return self._price
 
-    def make_trade(self, quantity: Decimal) -> ATrade:
+    def make_trade(self, quantity: Decimal) -> ITrade:
         return Trade(quantity, self.price)
 
     def __eq__(self, value: object) -> bool:
@@ -62,7 +63,10 @@ def test_long_to_short_fifo_with_profit():
     assert trading_pnl.realized == 2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 100), Trade(-1, 102))
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 100), 0),
+            UnmatchedTrade(Trade(-1, 102), 0)
+        )
     ]
 
 
@@ -78,7 +82,10 @@ def test_short_to_long_fifo_with_profit():
     assert trading_pnl.realized == 2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(-1, 102), Trade(1, 100))
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 102), 0),
+            UnmatchedTrade(Trade(1, 100), 0)
+        )
     ]
 
 
@@ -94,7 +101,10 @@ def test_long_to_short_fifo_with_loss():
     assert trading_pnl.realized == -2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 102), Trade(-1, 100))
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 102), 0),
+            UnmatchedTrade(Trade(-1, 100), 0)
+        )
     ]
 
 
@@ -110,7 +120,10 @@ def test_short_to_long_fifo_with_loss():
     assert trading_pnl.realized == -2
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(-1, 100), Trade(1, 102))
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 100), 0),
+            UnmatchedTrade(Trade(1, 102), 0)
+        )
     ]
 
 
@@ -123,9 +136,14 @@ def test_long_sell_fifo_through_flat():
     assert trading_pnl.quantity == -1
     assert trading_pnl.cost == 102
     assert trading_pnl.realized == 1
-    assert list(trading_pnl.unmatched) == [Trade(-1, 102)]
+    assert list(trading_pnl.unmatched) == [
+        UnmatchedTrade(Trade(-1, 102), 0)
+    ]
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 101), Trade(-1, 102))
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 101), 0),
+            UnmatchedTrade(Trade(-1, 102), 1)
+        )
     ]
 
 
@@ -138,9 +156,14 @@ def test_short_buy_fifo_through_flat():
     assert trading_pnl.quantity == 1
     assert trading_pnl.cost == -101
     assert trading_pnl.realized == 1
-    assert list(trading_pnl.unmatched) == [Trade(1, 101)]
+    assert list(trading_pnl.unmatched) == [
+        UnmatchedTrade(Trade(1, 101), 0)
+    ]
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(-1, 102), Trade(1, 101))
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 102), 0),
+            UnmatchedTrade(Trade(1, 101), 1)
+        )
     ]
 
 
@@ -159,8 +182,14 @@ def test_one_buy_many_sells_fifo():
     assert trading_pnl.realized == 20
     assert len(trading_pnl.unmatched) == 0
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(5, 101), Trade(-5, 102)),
-        MatchedTrade(Trade(5, 101), Trade(-5, 104)),
+        MatchedTrade(
+            UnmatchedTrade(Trade(5, 101), 0),
+            UnmatchedTrade(Trade(-5, 102), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(5, 101), 1),
+            UnmatchedTrade(Trade(-5, 104), 0)
+        ),
     ]
 
 
@@ -205,11 +234,26 @@ def test_many_buys_one_sell_fifo():
     trading_pnl.add(Trade(1, 103))
     trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 100), 0),
+            UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 102), 0),
+            UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 101), 0),
+            UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 104), 0),
+            UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 103), 0),
+            UnmatchedTrade(Trade(-1, 104), 0)
+        ),
     ]
 
 
@@ -224,11 +268,26 @@ def test_many_buys_one_sell_lifo():
     trading_pnl.add(Trade(1, 103))
     trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 103), 0),
+            UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 104), 0),
+            UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 101), 0),
+            UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 102), 0),
+            UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 100), 0),
+            UnmatchedTrade(Trade(-1, 104), 0)
+        ),
     ]
 
 
@@ -243,11 +302,21 @@ def test_many_buys_one_sell_best_price():
     trading_pnl.add(Trade(1, 103))
     trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 100), 0), UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 101), 0), UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 102), 0), UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 103), 0), UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 104), 0), UnmatchedTrade(Trade(-1, 104), 0)
+        ),
     ]
 
 
@@ -262,11 +331,21 @@ def test_many_sells_one_buy_best_price():
     trading_pnl.add(Trade(-1, 103))
     trading_pnl.add(Trade(5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(-1, 104), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 103), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 102), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 101), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 100), Trade(1, 104)),
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 104), 0), UnmatchedTrade(Trade(1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 103), 0), UnmatchedTrade(Trade(1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 102), 0), UnmatchedTrade(Trade(1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 101), 0), UnmatchedTrade(Trade(1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 100), 0), UnmatchedTrade(Trade(1, 104), 0)
+        ),
     ]
 
 
@@ -281,11 +360,21 @@ def test_many_buys_one_sell_worst_price():
     trading_pnl.add(Trade(1, 103))
     trading_pnl.add(Trade(-5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(1, 104), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 103), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 102), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 101), Trade(-1, 104)),
-        MatchedTrade(Trade(1, 100), Trade(-1, 104)),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 104), 0), UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 103), 0), UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 102), 0), UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 101), 0), UnmatchedTrade(Trade(-1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(1, 100), 0), UnmatchedTrade(Trade(-1, 104), 0)
+        ),
     ]
 
 
@@ -300,9 +389,19 @@ def test_many_sells_one_buy_worst_price():
     trading_pnl.add(Trade(-1, 103))
     trading_pnl.add(Trade(5, 104))
     assert trading_pnl.matched == [
-        MatchedTrade(Trade(-1, 100), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 101), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 102), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 103), Trade(1, 104)),
-        MatchedTrade(Trade(-1, 104), Trade(1, 104)),
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 100), 0), UnmatchedTrade(Trade(1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 101), 0), UnmatchedTrade(Trade(1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 102), 0), UnmatchedTrade(Trade(1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 103), 0), UnmatchedTrade(Trade(1, 104), 0)
+        ),
+        MatchedTrade(
+            UnmatchedTrade(Trade(-1, 104), 0), UnmatchedTrade(Trade(1, 104), 0)
+        ),
     ]

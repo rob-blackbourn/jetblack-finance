@@ -9,7 +9,8 @@ from typing import Deque, List, Optional, Tuple, Union
 
 from .types import (
     MatchedTrade,
-    ATrade,
+    ITrade,
+    UnmatchedTrade,
     PnlStrip
 )
 
@@ -21,10 +22,13 @@ class TradingPnl(metaclass=ABCMeta):
         self.quantity: Decimal = Decimal(0)
         self.cost: Decimal = Decimal(0)
         self.realized: Decimal = Decimal(0)
-        self.unmatched: Deque[ATrade] = deque()
+        self.unmatched: Deque[UnmatchedTrade] = deque()
         self.matched: List[MatchedTrade] = []
 
-    def add(self, trade: ATrade) -> None:
+    def add(self, trade: ITrade) -> None:
+        self._add(UnmatchedTrade(trade, 0))
+
+    def _add(self, trade: UnmatchedTrade) -> None:
         if (
             # We are flat
             self.quantity == 0 or
@@ -56,12 +60,15 @@ class TradingPnl(metaclass=ABCMeta):
             self.unrealized(price)
         )
 
-    def _extend_position(self, trade: ATrade) -> None:
+    def _extend_position(self, trade: UnmatchedTrade) -> None:
         self.cost -= trade.quantity * trade.price
         self.quantity += trade.quantity
         self.unmatched.append(trade)
 
-    def _find_match(self, trade_candidate: ATrade) -> Tuple[ATrade, ATrade, Optional[ATrade]]:
+    def _find_match(
+            self,
+            trade_candidate: UnmatchedTrade
+    ) -> Tuple[UnmatchedTrade, UnmatchedTrade, Optional[UnmatchedTrade]]:
         match_candidate = self.pop_unmatched()
 
         if abs(trade_candidate.quantity) >= abs(match_candidate.quantity):
@@ -85,7 +92,7 @@ class TradingPnl(metaclass=ABCMeta):
 
         return close_trade, open_trade, trade
 
-    def _match(self, trade: ATrade) -> Optional[ATrade]:
+    def _match(self, trade: UnmatchedTrade) -> Optional[UnmatchedTrade]:
         close_trade, open_trade, remainder = self._find_match(trade)
 
         # Note that the open will have the opposite sign to the close.
@@ -103,19 +110,19 @@ class TradingPnl(metaclass=ABCMeta):
 
         return remainder
 
-    def _reduce_position(self, trade: Optional[ATrade]) -> None:
+    def _reduce_position(self, trade: Optional[UnmatchedTrade]) -> None:
         while trade is not None and trade.quantity != 0 and self.unmatched:
             trade = self._match(trade)
 
         if trade is not None and trade.quantity != 0:
-            self.add(trade)
+            self._add(trade)
 
     @abstractmethod
-    def pop_unmatched(self) -> ATrade:
+    def pop_unmatched(self) -> UnmatchedTrade:
         ...
 
     @abstractmethod
-    def push_unmatched(self, trade: ATrade) -> None:
+    def push_unmatched(self, trade: UnmatchedTrade) -> None:
         ...
 
     def __repr__(self) -> str:
@@ -124,41 +131,41 @@ class TradingPnl(metaclass=ABCMeta):
 
 class FifoTradingPnl(TradingPnl):
 
-    def pop_unmatched(self) -> ATrade:
+    def pop_unmatched(self) -> UnmatchedTrade:
         return self.unmatched.popleft()
 
-    def push_unmatched(self, trade: ATrade) -> None:
+    def push_unmatched(self, trade: UnmatchedTrade) -> None:
         self.unmatched.appendleft(trade)
 
 
 class LifoTradingPnl(TradingPnl):
 
-    def pop_unmatched(self) -> ATrade:
+    def pop_unmatched(self) -> UnmatchedTrade:
         return self.unmatched.pop()
 
-    def push_unmatched(self, trade: ATrade) -> None:
+    def push_unmatched(self, trade: UnmatchedTrade) -> None:
         self.unmatched.append(trade)
 
 
 class BestPriceTradingPnl(TradingPnl):
 
-    def pop_unmatched(self) -> ATrade:
+    def pop_unmatched(self) -> UnmatchedTrade:
         trades = sorted(self.unmatched, key=lambda x: x.price)
         trade = trades[0] if self.quantity > 0 else trades[-1]
         self.unmatched.remove(trade)
         return trade
 
-    def push_unmatched(self, trade: ATrade) -> None:
+    def push_unmatched(self, trade: UnmatchedTrade) -> None:
         self.unmatched.append(trade)
 
 
 class WorstPriceTradingPnl(TradingPnl):
 
-    def pop_unmatched(self) -> ATrade:
+    def pop_unmatched(self) -> UnmatchedTrade:
         trades = sorted(self.unmatched, key=lambda x: x.price)
         trade = trades[-1] if self.quantity > 0 else trades[0]
         self.unmatched.remove(trade)
         return trade
 
-    def push_unmatched(self, trade: ATrade) -> None:
+    def push_unmatched(self, trade: UnmatchedTrade) -> None:
         self.unmatched.append(trade)

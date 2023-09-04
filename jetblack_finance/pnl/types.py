@@ -2,40 +2,62 @@
 
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
 from decimal import Decimal
-from typing import NamedTuple, Tuple, Union
+from typing import NamedTuple, Protocol, Tuple, Union, cast
 
 
-class ATrade(metaclass=ABCMeta):
+class ITrade(Protocol):
 
     @property
-    @abstractmethod
     def quantity(self) -> Decimal:
         ...
 
     @property
-    @abstractmethod
     def price(self) -> Decimal:
         ...
 
-    @abstractmethod
-    def make_trade(self, quantity: Decimal) -> ATrade:
+    def make_trade(self, quantity: Decimal) -> ITrade:
         ...
 
-    def split(self, quantity: Decimal) -> Tuple[ATrade, ATrade]:
-        matched = self.make_trade(quantity)
-        unmatched = self.make_trade(self.quantity - quantity)
-        return matched, unmatched
+
+class UnmatchedTrade:
+
+    def __init__(self, trade: ITrade, version: int) -> None:
+        self._trade = trade
+        self._version = version
+
+    @property
+    def quantity(self) -> Decimal:
+        return self._trade.quantity
+
+    @property
+    def price(self) -> Decimal:
+        return self._trade.price
+
+    @property
+    def trade(self) -> ITrade:
+        return self._trade
+
+    def split(self, quantity: Decimal) -> Tuple[UnmatchedTrade, UnmatchedTrade]:
+        matched = cast(ITrade, self._trade.make_trade(quantity))
+        unmatched = cast(ITrade, self._trade.make_trade(
+            self.quantity - quantity))
+        return (
+            UnmatchedTrade(matched, self._version),
+            UnmatchedTrade(unmatched, self._version + 1)
+        )
+
+    def __eq__(self, value: object) -> bool:
+        return isinstance(value, UnmatchedTrade) and self._trade == self._trade
 
 
 class MatchedTrade(NamedTuple):
     """A matched trade"""
 
-    opening: ATrade
+    opening: UnmatchedTrade
     """The opening trade"""
 
-    closing: ATrade
+    closing: UnmatchedTrade
     """The closing trade"""
 
 
