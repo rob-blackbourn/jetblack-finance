@@ -34,6 +34,8 @@ class ScaledTrade:
             if quantity is not None
             else Fraction(1)
         )
+        if self._scale > 1:
+            raise ValueError(f"invalid scale '{self._scale}'")
 
     @property
     def quantity(self) -> Decimal:
@@ -63,7 +65,7 @@ class ScaledTrade:
         )
 
     def __repr__(self) -> str:
-        return f"{self.quantity} of {self._trade.quantity} @ {self.trade.price}"
+        return f"{self.quantity} (of {self._trade.quantity}) @ {self.trade.price}"
 
 
 class MatchedTrade(NamedTuple):

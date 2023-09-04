@@ -126,7 +126,7 @@ class TradingPnl(metaclass=ABCMeta):
         ...
 
     def __repr__(self) -> str:
-        return f"{self.quantity} {self.cost} {self.realized}"
+        return f"{self.quantity} @ {self.cost} + {self.realized}"
 
 
 class FifoTradingPnl(TradingPnl):

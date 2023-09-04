@@ -52,6 +52,162 @@ class Trade(ITrade):
         # return f"Trade(quantity={self.quantity},price={self.price})"
 
 
+def test_long_to_short_with_splits_best_price():
+    """long to short, splits, best price"""
+
+    trading_pnl = BestPriceTradingPnl()
+
+    assert trading_pnl.quantity == 0
+    assert trading_pnl.cost == 0
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 0
+
+    buy_6_at_100 = Trade(6, 100)
+    trading_pnl.add(buy_6_at_100)
+    assert trading_pnl.quantity == 6
+    assert trading_pnl.cost == -600
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 100
+
+    buy_6_at_106 = Trade(6, 106)
+    trading_pnl.add(buy_6_at_106)
+    assert trading_pnl.quantity == 12
+    assert trading_pnl.cost == -1236
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    buy_6_at_103 = Trade(6, 103)
+    trading_pnl.add(buy_6_at_103)
+    assert trading_pnl.quantity == 18
+    assert trading_pnl.cost == -1854
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    sell_9_at_105 = Trade(-9, 105)
+    trading_pnl.add(sell_9_at_105)
+    assert trading_pnl.quantity == 9
+    assert trading_pnl.cost == -945
+    assert trading_pnl.realized == 36
+    assert trading_pnl.avg_cost == 105
+
+
+def test_long_to_short_with_splits_worst_price():
+    """long to short, splits, worst price"""
+
+    trading_pnl = WorstPriceTradingPnl()
+
+    assert trading_pnl.quantity == 0
+    assert trading_pnl.cost == 0
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 0
+
+    buy_6_at_100 = Trade(6, 100)
+    trading_pnl.add(buy_6_at_100)
+    assert trading_pnl.quantity == 6
+    assert trading_pnl.cost == -600
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 100
+
+    buy_6_at_106 = Trade(6, 106)
+    trading_pnl.add(buy_6_at_106)
+    assert trading_pnl.quantity == 12
+    assert trading_pnl.cost == -1236
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    buy_6_at_103 = Trade(6, 103)
+    trading_pnl.add(buy_6_at_103)
+    assert trading_pnl.quantity == 18
+    assert trading_pnl.cost == -1854
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    sell_9_at_105 = Trade(-9, 105)
+    trading_pnl.add(sell_9_at_105)
+    assert trading_pnl.quantity == 9
+    assert trading_pnl.cost == -909
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 101
+
+
+def test_long_to_short_with_splits_fifo():
+    """long to short, splits, fifo"""
+
+    trading_pnl = FifoTradingPnl()
+
+    assert trading_pnl.quantity == 0
+    assert trading_pnl.cost == 0
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 0
+
+    buy_6_at_100 = Trade(6, 100)
+    trading_pnl.add(buy_6_at_100)
+    assert trading_pnl.quantity == 6
+    assert trading_pnl.cost == -600
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 100
+
+    buy_6_at_106 = Trade(6, 106)
+    trading_pnl.add(buy_6_at_106)
+    assert trading_pnl.quantity == 12
+    assert trading_pnl.cost == -1236
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    buy_6_at_103 = Trade(6, 103)
+    trading_pnl.add(buy_6_at_103)
+    assert trading_pnl.quantity == 18
+    assert trading_pnl.cost == -1854
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    sell_9_at_105 = Trade(-9, 105)
+    trading_pnl.add(sell_9_at_105)
+    assert trading_pnl.quantity == 9
+    assert trading_pnl.cost == -936
+    assert trading_pnl.realized == 27
+    assert trading_pnl.avg_cost == 104
+
+
+def test_long_to_short_with_splits_lifo():
+    """long to short, splits, fifo"""
+
+    trading_pnl = LifoTradingPnl()
+
+    assert trading_pnl.quantity == 0
+    assert trading_pnl.cost == 0
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 0
+
+    buy_6_at_100 = Trade(6, 100)
+    trading_pnl.add(buy_6_at_100)
+    assert trading_pnl.quantity == 6
+    assert trading_pnl.cost == -600
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 100
+
+    buy_6_at_106 = Trade(6, 106)
+    trading_pnl.add(buy_6_at_106)
+    assert trading_pnl.quantity == 12
+    assert trading_pnl.cost == -1236
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    buy_6_at_103 = Trade(6, 103)
+    trading_pnl.add(buy_6_at_103)
+    assert trading_pnl.quantity == 18
+    assert trading_pnl.cost == -1854
+    assert trading_pnl.realized == 0
+    assert trading_pnl.avg_cost == 103
+
+    sell_9_at_105 = Trade(-9, 105)
+    trading_pnl.add(sell_9_at_105)
+    assert trading_pnl.quantity == 9
+    assert trading_pnl.cost == -918
+    assert trading_pnl.realized == 9
+    assert trading_pnl.avg_cost == 102
+
+
 def test_long_to_short_fifo_with_profit():
     """Buy 1 @ 100, then sell 1 @ 102 making 2"""
 
