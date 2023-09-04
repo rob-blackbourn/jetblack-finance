@@ -26,7 +26,7 @@ class TradingPnl(metaclass=ABCMeta):
         self.matched: List[MatchedTrade] = []
 
     def add(self, trade: ITrade) -> None:
-        self._add(UnmatchedTrade(trade, 0))
+        self._add(UnmatchedTrade(trade))
 
     def _add(self, trade: UnmatchedTrade) -> None:
         if (

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import NamedTuple, Protocol, Tuple, Union, cast
+from fractions import Fraction
+from typing import NamedTuple, Protocol, Tuple, Union, Optional
 
 
 class ITrade(Protocol):
@@ -22,13 +23,18 @@ class ITrade(Protocol):
 
 class UnmatchedTrade:
 
-    def __init__(self, trade: ITrade, version: int) -> None:
+    def __init__(self, trade: ITrade, quantity: Optional[Union[Decimal, int]] = None) -> None:
         self._trade = trade
-        self._version = version
+        self._fraction = (
+            Fraction(quantity) / Fraction(trade.quantity)
+            if quantity is not None
+            else Fraction(1)
+        )
 
     @property
     def quantity(self) -> Decimal:
-        return self._trade.quantity
+        quantity = Fraction(self._trade.quantity) * self._fraction
+        return Decimal(quantity.numerator) / Decimal(quantity.denominator)
 
     @property
     def price(self) -> Decimal:
@@ -39,20 +45,21 @@ class UnmatchedTrade:
         return self._trade
 
     def split(self, quantity: Decimal) -> Tuple[UnmatchedTrade, UnmatchedTrade]:
-        matched = cast(ITrade, self._trade.make_trade(quantity))
-        unmatched = cast(ITrade, self._trade.make_trade(
-            self.quantity - quantity))
-        return (
-            UnmatchedTrade(matched, self._version),
-            UnmatchedTrade(unmatched, self._version + 1)
-        )
+        if abs(quantity) > abs(self.quantity):
+            raise ValueError("invalid quantity")
+        matched = UnmatchedTrade(self._trade, quantity)
+        unmatched = UnmatchedTrade(self._trade, self.quantity - quantity)
+        return matched, unmatched
 
     def __eq__(self, value: object) -> bool:
-        return isinstance(value, UnmatchedTrade) and self._trade == self._trade
+        return (
+            isinstance(value, UnmatchedTrade) and
+            self._trade == value._trade and
+            self._fraction == value._fraction
+        )
 
     def __repr__(self) -> str:
-        return f"[{self._version}] {self._trade!r}"
-        # return f"UnmatchedTrade({self._trade!r},version={self._version})"
+        return f"{self.quantity} of {self._trade.quantity} @ {self.trade.price}"
 
 
 class MatchedTrade(NamedTuple):
@@ -63,6 +70,9 @@ class MatchedTrade(NamedTuple):
 
     closing: UnmatchedTrade
     """The closing trade"""
+
+    def __repr__(self) -> str:
+        return f"{self.opening!r} / {self.closing!r}"
 
 
 class PnlStrip(NamedTuple):
