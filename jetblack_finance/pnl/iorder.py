@@ -1,4 +1,4 @@
-"""ITrade"""
+"""IOrder"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Protocol
 
 
-class ITrade(Protocol):
+class IOrder(Protocol):
 
     @property
     @abstractmethod
@@ -20,5 +20,5 @@ class ITrade(Protocol):
         ...
 
     @abstractmethod
-    def make_trade(self, quantity: Decimal) -> ITrade:
+    def make_order(self, quantity: Decimal) -> IOrder:
         ...

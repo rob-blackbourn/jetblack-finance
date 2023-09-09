@@ -5,16 +5,16 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import NamedTuple, Union
 
-from .scaled_trade import ScaledTrade
+from .scaled_order import ScaledOrder
 
 
 class MatchedTrade(NamedTuple):
     """A matched trade"""
 
-    opening: ScaledTrade
+    opening: ScaledOrder
     """The opening trade"""
 
-    closing: ScaledTrade
+    closing: ScaledOrder
     """The closing trade"""
 
     def __repr__(self) -> str:
