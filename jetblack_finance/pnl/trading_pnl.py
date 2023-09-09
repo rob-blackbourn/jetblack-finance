@@ -49,7 +49,7 @@ class TradingPnl(metaclass=ABCMeta):
     def unrealized(self, price: Union[Decimal, int]) -> Decimal:
         return self.quantity * price + self.cost
 
-    def pnl(self, price: Union[Decimal, int]) -> PnlStrip:
+    def pnl_strip(self, price: Union[Decimal, int]) -> PnlStrip:
         return PnlStrip(
             self.quantity,
             self.avg_cost,
