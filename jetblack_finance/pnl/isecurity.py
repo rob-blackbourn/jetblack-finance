@@ -1,22 +1,19 @@
-"""IOrder"""
+"""ISecurity"""
 
 from __future__ import annotations
 
 from abc import abstractmethod
 from typing import Protocol
 
-from .iorder import IOrder
-from .isecurity import ISecurity
 
-
-class ITrade(Protocol):
+class ISecurity(Protocol):
 
     @property
     @abstractmethod
-    def security(self) -> ISecurity:
+    def symbol(self) -> str:
         ...
 
     @property
     @abstractmethod
-    def order(self) -> IOrder:
+    def ccy(self) -> str:
         ...

@@ -1,29 +1,29 @@
 """pnl"""
 
-from .itrade import ITrade
-from .matched_trade import MatchedTrade
-from .pnl_strip import PnlStrip
-from .scaled_trade import ScaledTrade
-from .trading_pnl import (
-    TradingPnl,
-    FifoTradingPnl,
-    LifoTradingPnl,
-    BestPriceTradingPnl,
-    WorstPriceTradingPnl
+from .iorder import IOrder
+from .matched_order import MatchedOrder
+from .order_pnl_strip import OrderPnlStrip
+from .scaled_order import ScaledOrder
+from .order_pnl import (
+    OrderPnl,
+    FifoOrderPnl,
+    LifoOrderPnl,
+    BestPriceOrderPnl,
+    WorstPriceOrderPnl
 )
 
 __all__ = [
-    'ITrade',
+    'IOrder',
 
-    'MatchedTrade',
+    'MatchedOrder',
 
-    'PnlStrip',
+    'OrderPnlStrip',
 
-    'ScaledTrade',
+    'ScaledOrder',
 
-    'TradingPnl',
-    'FifoTradingPnl',
-    'LifoTradingPnl',
-    'BestPriceTradingPnl',
-    'WorstPriceTradingPnl'
+    'OrderPnl',
+    'FifoOrderPnl',
+    'LifoOrderPnl',
+    'BestPriceOrderPnl',
+    'WorstPriceOrderPnl'
 ]

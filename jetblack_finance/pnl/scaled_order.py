@@ -7,14 +7,14 @@ from fractions import Fraction
 from typing import Tuple, Union, Optional
 
 
-from .itrade import ITrade
+from .iorder import IOrder
 
 
-class ScaledTrade:
+class ScaledOrder:
 
     def __init__(
             self,
-            trade: ITrade,
+            trade: IOrder,
             quantity: Optional[Union[Decimal, int]] = None
     ) -> None:
         self._trade = trade
@@ -36,19 +36,19 @@ class ScaledTrade:
         return self._trade.price
 
     @property
-    def trade(self) -> ITrade:
+    def trade(self) -> IOrder:
         return self._trade
 
-    def split(self, quantity: Decimal) -> Tuple[ScaledTrade, ScaledTrade]:
+    def split(self, quantity: Decimal) -> Tuple[ScaledOrder, ScaledOrder]:
         if abs(quantity) > abs(self.quantity):
             raise ValueError("invalid quantity")
-        matched = ScaledTrade(self._trade, quantity)
-        unmatched = ScaledTrade(self._trade, self.quantity - quantity)
+        matched = ScaledOrder(self._trade, quantity)
+        unmatched = ScaledOrder(self._trade, self.quantity - quantity)
         return matched, unmatched
 
     def __eq__(self, value: object) -> bool:
         return (
-            isinstance(value, ScaledTrade) and
+            isinstance(value, ScaledOrder) and
             self._trade == value._trade and
             self._scale == value._scale
         )
