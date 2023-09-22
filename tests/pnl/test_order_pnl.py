@@ -11,7 +11,7 @@ from jetblack_finance.pnl import (
     MatchedOrder,
     IOrder,
 )
-from jetblack_finance.pnl.order_pnl_strip import ScaledOrder
+from jetblack_finance.pnl.scaled_order import ScaledOrder
 
 Number = Union[Decimal, int]
 
