@@ -2,7 +2,7 @@
 
 from .iorder import IOrder
 from .matched_order import MatchedOrder
-from .pnl_strip import PnlStrip
+from .order_pnl_strip import OrderPnlStrip
 from .scaled_order import ScaledOrder
 from .order_pnl import (
     OrderPnl,
@@ -17,7 +17,7 @@ __all__ = [
 
     'MatchedOrder',
 
-    'PnlStrip',
+    'OrderPnlStrip',
 
     'ScaledOrder',
 

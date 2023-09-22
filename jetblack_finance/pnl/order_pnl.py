@@ -1,19 +1,39 @@
-"""A calculator for trading P&L"""
+"""A calculator for P&L on orders"""
 
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from collections import deque
 from decimal import Decimal
-from typing import Deque, List, Optional, Tuple, Union
+from typing import Deque, List, Optional, Protocol, Tuple, Union
 
 from .iorder import IOrder
 from .matched_order import MatchedOrder
 from .scaled_order import ScaledOrder
-from .pnl_strip import PnlStrip
+from .order_pnl_strip import OrderPnlStrip
 
 
-class OrderPnl(metaclass=ABCMeta):
+class IOrderPnl(Protocol):
+
+    @abstractmethod
+    def add(self, order: IOrder) -> None:
+        ...
+
+    @property
+    @abstractmethod
+    def avg_cost(self) -> Decimal:
+        ...
+
+    @abstractmethod
+    def unrealized(self, price: Union[Decimal, int]) -> Decimal:
+        ...
+
+    @abstractmethod
+    def pnl_strip(self, price: Union[Decimal, int]) -> OrderPnlStrip:
+        ...
+
+
+class OrderPnl(IOrderPnl, metaclass=ABCMeta):
     """A class to calculate basic P&L on orders"""
 
     def __init__(self) -> None:
@@ -49,8 +69,8 @@ class OrderPnl(metaclass=ABCMeta):
     def unrealized(self, price: Union[Decimal, int]) -> Decimal:
         return self.quantity * price + self.cost
 
-    def pnl_strip(self, price: Union[Decimal, int]) -> PnlStrip:
-        return PnlStrip(
+    def pnl_strip(self, price: Union[Decimal, int]) -> OrderPnlStrip:
+        return OrderPnlStrip(
             self.quantity,
             self.avg_cost,
             price,
