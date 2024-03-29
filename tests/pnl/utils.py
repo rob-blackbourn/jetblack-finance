@@ -3,7 +3,7 @@
 from decimal import Decimal
 from typing import Union
 
-from jetblack_finance.pnl import IOrder
+from jetblack_finance.pnl import IOrder, ISecurity, ITrade
 
 Number = Union[Decimal, int]
 
@@ -41,3 +41,34 @@ class Order(IOrder):
 
     def __repr__(self) -> str:
         return f"{self.quantity} @ {self.price}"
+
+
+class Security(ISecurity):
+    """A simple security"""
+
+    def __init__(self, symbol: str, ccy: str) -> None:
+        self._symbol = symbol
+        self._ccy = ccy
+
+    @property
+    def symbol(self) -> str:
+        return self._symbol
+
+    @property
+    def ccy(self) -> str:
+        return self._ccy
+
+
+class Trade(ITrade):
+
+    def __init__(self, security: Security, order: Order) -> None:
+        self._security = security
+        self._order = order
+
+    @property
+    def security(self) -> Security:
+        return self._security
+
+    @property
+    def order(self) -> Order:
+        return self._order

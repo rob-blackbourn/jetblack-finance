@@ -15,12 +15,12 @@ class ScaledOrder:
     def __init__(
             self,
             trade: IOrder,
-            quantity: Optional[Union[Decimal, int]] = None
+            scale: Optional[Fraction] = None
     ) -> None:
         self._trade = trade
-        self._scale = (
-            Fraction(quantity) / Fraction(trade.quantity)
-            if quantity is not None
+        self._scale: Fraction = (
+            scale
+            if scale is not None
             else Fraction(1)
         )
         if self._scale > 1:
@@ -42,9 +42,14 @@ class ScaledOrder:
     def split(self, quantity: Decimal) -> Tuple[ScaledOrder, ScaledOrder]:
         if abs(quantity) > abs(self.quantity):
             raise ValueError("invalid quantity")
-        matched = ScaledOrder(self._trade, quantity)
-        unmatched = ScaledOrder(self._trade, self.quantity - quantity)
+        remainder = self.quantity - quantity
+        denominator = Fraction(self._trade.quantity)
+        matched = ScaledOrder(self._trade, Fraction(quantity) / denominator)
+        unmatched = ScaledOrder(self._trade, Fraction(remainder) / denominator)
         return matched, unmatched
+
+    def __neg__(self) -> ScaledOrder:
+        return ScaledOrder(self._trade, -self._scale)
 
     def __eq__(self, value: object) -> bool:
         return (
@@ -54,4 +59,4 @@ class ScaledOrder:
         )
 
     def __repr__(self) -> str:
-        return f"{self.quantity} (of {self._trade.quantity}) @ {self.trade.price}"
+        return f"{self.quantity} (of {self._trade.quantity}) @ {self.price}"
