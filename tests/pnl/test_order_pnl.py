@@ -53,6 +53,13 @@ def test_long_to_short_with_splits_best_price():
     assert order_pnl.realized == 36
     assert order_pnl.avg_cost == 105
 
+    sell_9_at_107 = Order(-9, 105)
+    order_pnl.add(sell_9_at_107)
+    assert order_pnl.quantity == 0
+    assert order_pnl.cost == 0
+    assert order_pnl.realized == 36
+    assert order_pnl.avg_cost == 0
+
 
 def test_long_to_short_with_splits_worst_price():
     """long to short, splits, worst price"""
