@@ -14,10 +14,10 @@ class ScaledOrder:
 
     def __init__(
             self,
-            trade: IOrder,
+            order: IOrder,
             scale: Optional[Fraction] = None
     ) -> None:
-        self._trade = trade
+        self._order = order
         self._scale: Fraction = (
             scale
             if scale is not None
@@ -28,35 +28,38 @@ class ScaledOrder:
 
     @property
     def quantity(self) -> Decimal:
-        quantity = Fraction(self._trade.quantity) * self._scale
+        quantity = Fraction(self._order.quantity) * self._scale
         return Decimal(quantity.numerator) / Decimal(quantity.denominator)
 
     @property
     def price(self) -> Decimal:
-        return self._trade.price
+        return self._order.price
 
     @property
-    def trade(self) -> IOrder:
-        return self._trade
+    def order(self) -> IOrder:
+        return self._order
 
     def split(self, quantity: Decimal) -> Tuple[ScaledOrder, ScaledOrder]:
         if abs(quantity) > abs(self.quantity):
             raise ValueError("invalid quantity")
         remainder = self.quantity - quantity
-        denominator = Fraction(self._trade.quantity)
-        matched = ScaledOrder(self._trade, Fraction(quantity) / denominator)
-        unmatched = ScaledOrder(self._trade, Fraction(remainder) / denominator)
+        denominator = Fraction(self._order.quantity)
+        matched = ScaledOrder(self._order, Fraction(quantity) / denominator)
+        unmatched = ScaledOrder(self._order, Fraction(remainder) / denominator)
         return matched, unmatched
 
     def __neg__(self) -> ScaledOrder:
-        return ScaledOrder(self._trade, -self._scale)
+        return ScaledOrder(
+            self._order,
+            -self._scale  # pylint: disable=invalid-unary-operand-type
+        )
 
     def __eq__(self, value: object) -> bool:
         return (
             isinstance(value, ScaledOrder) and
-            self._trade == value._trade and
+            self._order == value._order and
             self._scale == value._scale
         )
 
     def __repr__(self) -> str:
-        return f"{self.quantity} (of {self._trade.quantity}) @ {self.price}"
+        return f"{self.quantity} (of {self._order.quantity}) @ {self.price}"

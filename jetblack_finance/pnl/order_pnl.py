@@ -52,6 +52,7 @@ class OrderPnl:
         return self._matched
 
     def __add__(self, other: Any) -> OrderPnl:
+        assert isinstance(other, IOrder)
         return add_scaled_order(
             self,
             ScaledOrder(other),
@@ -61,6 +62,7 @@ class OrderPnl:
         )
 
     def __sub__(self, other: Any) -> OrderPnl:
+        assert isinstance(other, IOrder)
         return add_scaled_order(
             self,
             -ScaledOrder(other),
@@ -116,13 +118,13 @@ Create = Callable[
 ]
 
 
-def _extend_position(state: OrderPnl, order: ScaledOrder, create: Create) -> OrderPnl:
+def _extend_position(pnl: OrderPnl, order: ScaledOrder, create: Create) -> OrderPnl:
     return create(
-        state.quantity + order.quantity,
-        state.cost - order.quantity * order.price,
-        state.realized,
-        list(state.unmatched) + [order],
-        list(state.matched)
+        pnl.quantity + order.quantity,
+        pnl.cost - order.quantity * order.price,
+        pnl.realized,
+        list(pnl.unmatched) + [order],
+        list(pnl.matched)
     )
 
 
@@ -157,7 +159,7 @@ def _find_match(
 
 
 def _match(
-        state: OrderPnl,
+        pnl: OrderPnl,
         order: ScaledOrder,
         push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]],
@@ -165,7 +167,7 @@ def _match(
 ) -> Tuple[Optional[ScaledOrder], OrderPnl]:
     unmatched, close_order, open_order, remainder = _find_match(
         order,
-        state.unmatched,
+        pnl.unmatched,
         push_unmatched,
         pop_unmatched
     )
@@ -175,29 +177,29 @@ def _match(
     open_cost = -(open_order.quantity * open_order.price)
 
     # The difference between the two costs is the realised value.
-    realized = state.realized - (close_value - open_cost)
+    realized = pnl.realized - (close_value - open_cost)
     # Remove the cost.
-    cost = state.cost - open_cost
+    cost = pnl.cost - open_cost
     # Remove the quantity.
-    quantity = state.quantity - open_order.quantity
+    quantity = pnl.quantity - open_order.quantity
 
-    matched = list(state.matched) + [MatchedOrder(open_order, close_order)]
+    matched = list(pnl.matched) + [MatchedOrder(open_order, close_order)]
 
-    state = create(quantity, cost, realized, unmatched, matched)
+    pnl = create(quantity, cost, realized, unmatched, matched)
 
-    return remainder, state
+    return remainder, pnl
 
 
 def _reduce_position(
-        state: OrderPnl,
+        pnl: OrderPnl,
         order: Optional[ScaledOrder],
         push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]],
         create: Create
 ) -> OrderPnl:
-    while order is not None and order.quantity != 0 and state.unmatched:
-        order, state = _match(
-            state,
+    while order is not None and order.quantity != 0 and pnl.unmatched:
+        order, pnl = _match(
+            pnl,
             order,
             push_unmatched,
             pop_unmatched,
@@ -205,19 +207,19 @@ def _reduce_position(
         )
 
     if order is not None and order.quantity != 0:
-        state = add_scaled_order(
-            state,
+        pnl = add_scaled_order(
+            pnl,
             order,
             push_unmatched,
             pop_unmatched,
             create
         )
 
-    return state
+    return pnl
 
 
 def add_scaled_order(
-        state: OrderPnl,
+        pnl: OrderPnl,
         order: ScaledOrder,
         push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]],
@@ -225,15 +227,15 @@ def add_scaled_order(
 ) -> OrderPnl:
     if (
         # We are flat
-        state.quantity == 0 or
+        pnl.quantity == 0 or
         # We are long and buying
-        (state.quantity > 0 and order.quantity > 0) or
+        (pnl.quantity > 0 and order.quantity > 0) or
         # We are short and selling.
-        (state.quantity < 0 and order.quantity < 0)
+        (pnl.quantity < 0 and order.quantity < 0)
     ):
-        return _extend_position(state, order, create)
+        return _extend_position(pnl, order, create)
     else:
-        return _reduce_position(state, order, push_unmatched, pop_unmatched, create)
+        return _reduce_position(pnl, order, push_unmatched, pop_unmatched, create)
 
 
 class FifoOrderPnl(OrderPnl):
