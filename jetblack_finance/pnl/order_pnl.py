@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from decimal import Decimal
-from typing import Any, Callable, NamedTuple, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Optional, Sequence, Tuple, Union
 
 from .iorder import IOrder
 from .matched_order import MatchedOrder
@@ -15,22 +15,44 @@ Unmatched = Sequence[ScaledOrder]
 Matched = Sequence[MatchedOrder]
 
 
-class OrderPnlState(NamedTuple):
+class OrderPnlState:
 
-    quantity: Decimal
-    cost: Decimal
-    realized: Decimal
-    unmatched: Unmatched
-    matched: Matched
+    def __init__(
+            self,
+            quantity: Decimal,
+            cost: Decimal,
+            realized: Decimal,
+            unmatched: Unmatched,
+            matched: Matched
+    ) -> None:
+        self._quantity = quantity
+        self._cost = cost
+        self._realized = realized
+        self._unmatched = unmatched
+        self._matched = matched
+
+    @property
+    def quantity(self) -> Decimal:
+        return self._quantity
+
+    @property
+    def cost(self) -> Decimal:
+        return self._cost
+
+    @property
+    def realized(self) -> Decimal:
+        return self._realized
+
+    @property
+    def unmatched(self) -> Unmatched:
+        return self._unmatched
+
+    @property
+    def matched(self) -> Matched:
+        return self._matched
 
     def __repr__(self) -> str:
         return f"{self.quantity} @ {self.cost} + {self.realized}"
-
-
-Create = Callable[
-    [Decimal, Decimal, Decimal, Unmatched, Matched],
-    OrderPnlState
-]
 
 
 def _extend_position(
@@ -151,7 +173,7 @@ def add_scaled_order(
         return _reduce_position(pnl, order, push_unmatched, pop_unmatched)
 
 
-class OrderPnl:
+class OrderPnl(OrderPnlState):
 
     def __init__(
         self,
@@ -161,18 +183,18 @@ class OrderPnl:
         unmatched: Optional[Unmatched] = None,
         matched: Optional[Matched] = None
     ) -> None:
-        self._state = OrderPnlState(
+        super().__init__(
             quantity,
             cost,
             realized,
             unmatched or [],
-            matched or []
+            matched or [],
         )
 
     def __add__(self, other: Any) -> OrderPnl:
         assert isinstance(other, IOrder)
         state = add_scaled_order(
-            self._state,
+            self,
             ScaledOrder(other),
             self._push_unmatched,
             self._pop_unmatched,
@@ -182,7 +204,7 @@ class OrderPnl:
     def __sub__(self, other: Any) -> OrderPnl:
         assert isinstance(other, IOrder)
         state = add_scaled_order(
-            self._state,
+            self,
             -ScaledOrder(other),
             self._push_unmatched,
             self._pop_unmatched,
@@ -203,26 +225,6 @@ class OrderPnl:
     @abstractmethod
     def _push_unmatched(self, order: ScaledOrder, unmatched: Unmatched) -> Unmatched:
         ...
-
-    @property
-    def quantity(self) -> Decimal:
-        return self._state.quantity
-
-    @property
-    def cost(self) -> Decimal:
-        return self._state.cost
-
-    @property
-    def realized(self) -> Decimal:
-        return self._state.realized
-
-    @property
-    def unmatched(self) -> Unmatched:
-        return self._state.unmatched
-
-    @property
-    def matched(self) -> Matched:
-        return self._state.matched
 
     @property
     def avg_cost(self) -> Decimal:
