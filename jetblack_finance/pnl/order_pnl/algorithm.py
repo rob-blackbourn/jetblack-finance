@@ -19,8 +19,6 @@ properties:
 * cost - how much has it cost to accrue the asset.
 * realized - how much profit (or loss) was realized by selling from a long position, or buying from a short.
 * unmatched - orders which have not yet been completely matched
-
-
 """
 
 from typing import Callable, Optional, Sequence, Tuple
@@ -55,33 +53,39 @@ def _extend_position(
 
 
 def _find_match(
-        order_candidate: SplitOrder,
+        order: SplitOrder,
         unmatched: Sequence[SplitOrder],
         push_unmatched: Callable[[SplitOrder, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[SplitOrder, Unmatched]]
 ) -> Tuple[Unmatched, SplitOrder, SplitOrder, Optional[SplitOrder]]:
-    match_candidate, unmatched = pop_unmatched(unmatched)
+    """Find a match for the order from the unmatched orders.
 
-    if abs(order_candidate.quantity) >= abs(match_candidate.quantity):
-        # Split the candidate order to match the quantity. This leaves a
-        # remaining order to match.
-        close_order, order = order_candidate.split(
-            -match_candidate.quantity
-        )
-        # The matching order is the whole of the candidate.
-        open_order = match_candidate
+    Args:
+        order (SplitOrder): The order to match.
+        unmatched (Sequence[SplitOrder]): The unmatched orders.
+        push_unmatched (Callable[[SplitOrder, Unmatched], Unmatched]): A function to add an order to the unmatched orders.
+        pop_unmatched (Callable[[Unmatched], tuple[SplitOrder, Unmatched]]): A function to take an order from the unmatched orders.
+
+    Returns:
+        Tuple[Unmatched, SplitOrder, SplitOrder, Optional[SplitOrder]]: A tuple of the unmatched orders, the (potentially split) order, the (potentially split) matched order, and the remainder if the order was split.
+    """
+    # Fetch the next order to match.
+    matched_order, unmatched = pop_unmatched(unmatched)
+
+    if abs(order.quantity) >= abs(matched_order.quantity):
+        # The order is larger than the matched order.
+        # Split the order by matched order quantity. This leaves a
+        # remainder still to match.
+        order, remainder = order.split(-matched_order.quantity)
     else:
-        # The order is the entire candidate order. There is no remaining
-        # order.
-        close_order, order = order_candidate, None
-        # Split the candidate match by the smaller order quantity, and
-        # return the remaining unmatched.
-        open_order, remaining_unmatched = match_candidate.split(
-            -order_candidate.quantity
-        )
-        unmatched = push_unmatched(remaining_unmatched, unmatched)
+        # The matched order is bigger than the current order. Split the match
+        # and return the spare to the unmatched.
+        matched_order, spare = matched_order.split(-order.quantity)
+        unmatched = push_unmatched(spare, unmatched)
+        # As the entire order has been filled there is no remainder.
+        remainder = None
 
-    return unmatched, close_order, open_order, order
+    return unmatched, order, matched_order, remainder
 
 
 def _match(
@@ -90,7 +94,22 @@ def _match(
         push_unmatched: Callable[[SplitOrder, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[SplitOrder, Unmatched]],
 ) -> Tuple[Optional[SplitOrder], OrderPnlState]:
-    unmatched, close_order, open_order, remainder = _find_match(
+    """Match the order with one from the unmatched orders.
+
+    Args:
+        pnl (OrderPnlState): The current p/l state.
+        order (SplitOrder): The order to be filled.
+        push_unmatched (Callable[[SplitOrder, Unmatched], Unmatched]): A
+            function to add an order to the unmatched orders.
+        pop_unmatched (Callable[[Unmatched], tuple[SplitOrder, Unmatched]]): A
+            function to take an order from the unmatched orders.
+
+    Returns:
+        Tuple[Optional[SplitOrder], OrderPnlState]: A tuple of the unfilled part
+            of the order (or None if the order was completely filled) and the
+            new p/l state.
+    """
+    unmatched, order, matched_order, remainder = _find_match(
         order,
         pnl.unmatched,
         push_unmatched,
@@ -98,17 +117,17 @@ def _match(
     )
 
     # Note that the open will have the opposite sign to the close.
-    close_value = close_order.quantity * close_order.price
-    open_cost = -(open_order.quantity * open_order.price)
+    close_value = order.quantity * order.price
+    open_cost = -(matched_order.quantity * matched_order.price)
 
-    # The difference between the two costs is the realised value.
+    # The difference between the two costs is the realized value.
     realized = pnl.realized - (close_value - open_cost)
     # Remove the cost.
     cost = pnl.cost - open_cost
     # Remove the quantity.
-    quantity = pnl.quantity - open_order.quantity
+    quantity = pnl.quantity - matched_order.quantity
 
-    matched = list(pnl.matched) + [MatchedOrder(open_order, close_order)]
+    matched = list(pnl.matched) + [MatchedOrder(matched_order, order)]
 
     pnl = OrderPnlState(quantity, cost, realized, unmatched, matched)
 
