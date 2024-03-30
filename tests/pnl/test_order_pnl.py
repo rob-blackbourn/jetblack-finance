@@ -8,9 +8,9 @@ from jetblack_finance.pnl import (
     LifoOrderPnl,
     BestPriceOrderPnl,
     WorstPriceOrderPnl,
-    MatchedOrder,
 )
-from jetblack_finance.pnl.scaled_order import ScaledOrder
+from jetblack_finance.pnl.order_pnl.order_pnl_state import MatchedOrder
+from jetblack_finance.pnl.order_pnl.scaled_order import ScaledOrder
 
 
 from .utils import Order
