@@ -17,7 +17,8 @@ properties:
 
 * quantity - how much of the asset is held.
 * cost - how much has it cost to accrue the asset.
-* realized - how much profit (or loss) was realized by selling from a long position, or buying from a short.
+* realized - how much profit (or loss) was realized by selling from a long
+  position, or buying from a short.
 * unmatched - orders which have not yet been completely matched
 """
 
@@ -32,7 +33,8 @@ def _extend_position(
         pnl: OrderPnlState,
         order: SplitOrder,
 ) -> OrderPnlState:
-    """Extend a long or flat position with a buy, or a short or flat position with a sell.
+    """Extend a long or flat position with a buy, or a short or flat position
+    with a sell.
 
     Extending a position simply accrues quantity, cost, and unmatched orders.
 
@@ -63,11 +65,16 @@ def _find_match(
     Args:
         order (SplitOrder): The order to match.
         unmatched (Sequence[SplitOrder]): The unmatched orders.
-        push_unmatched (Callable[[SplitOrder, Unmatched], Unmatched]): A function to add an order to the unmatched orders.
-        pop_unmatched (Callable[[Unmatched], tuple[SplitOrder, Unmatched]]): A function to take an order from the unmatched orders.
+        push_unmatched (Callable[[SplitOrder, Unmatched], Unmatched]): A
+            function to add an order to the unmatched orders.
+        pop_unmatched (Callable[[Unmatched], tuple[SplitOrder, Unmatched]]): A
+            function to take an order from the unmatched orders.
 
     Returns:
-        Tuple[Unmatched, SplitOrder, SplitOrder, Optional[SplitOrder]]: A tuple of the unmatched orders, the (potentially split) order, the (potentially split) matched order, and the remainder if the order was split.
+        Tuple[Unmatched, SplitOrder, SplitOrder, Optional[SplitOrder]]: A tuple
+            of the unmatched orders, the (potentially split) order, the
+            (potentially split) matched order, and the remainder if the order
+            was split.
     """
     # Fetch the next order to match.
     matched_order, unmatched = pop_unmatched(unmatched)
@@ -148,8 +155,12 @@ def _reduce_position(
     Args:
         pnl (OrderPnlState): The current p/l state.
         order (Optional[ScaledOrder]): The order
-        push_unmatched (Callable[[ScaledOrder, Unmatched], Unmatched]): A function to add an unmatched order on to a sequence of unmatched orders.
-        pop_unmatched (Callable[[Unmatched], tuple[ScaledOrder, Unmatched]]): A function to take an unmatched order from a sequence of unmatched orders.
+        push_unmatched (Callable[[ScaledOrder, Unmatched], Unmatched]): A
+            function to add an unmatched order on to a sequence of unmatched
+            orders.
+        pop_unmatched (Callable[[Unmatched], tuple[ScaledOrder, Unmatched]]): A
+            function to take an unmatched order from a sequence of unmatched
+            orders.
 
     Returns:
         OrderPnlState: The new p/l state.
@@ -181,6 +192,11 @@ def add_scaled_order(
 ) -> OrderPnlState:
     """Add an order creating a new p/l state.
 
+    The order could extend the position (buy to make a long or flat position
+    longer, or sell to make a short or flat position shorter), or reduce the
+    position (by selling from a long position, or buying back from a short
+    position)
+
     Args:
         pnl (OrderPnlState): The current p/l state.
         order (ScaledOrder): The order to add.
@@ -193,10 +209,6 @@ def add_scaled_order(
     Returns:
         OrderPnlState: The new p/l state.
     """
-    # This order could extend the position (buy to make a long or flat position
-    # longer, or sell to make a short or flat position shorter), or reduce the
-    # position (by selling from a long position, or buying back from a short
-    # position)
     if (
         # We are flat
         pnl.quantity == 0 or
