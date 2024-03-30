@@ -72,17 +72,20 @@ def _find_match(
     # Fetch the next order to match.
     matched_order, unmatched = pop_unmatched(unmatched)
 
-    if abs(order.quantity) >= abs(matched_order.quantity):
+    if abs(order.quantity) > abs(matched_order.quantity):
         # The order is larger than the matched order.
         # Split the order by matched order quantity. This leaves a
         # remainder still to match.
         order, remainder = order.split(-matched_order.quantity)
-    else:
+    elif abs(order.quantity) < abs(matched_order.quantity):
         # The matched order is bigger than the current order. Split the match
         # and return the spare to the unmatched.
         matched_order, spare = matched_order.split(-order.quantity)
         unmatched = push_unmatched(spare, unmatched)
         # As the entire order has been filled there is no remainder.
+        remainder = None
+    else:
+        # The order quantity matches the matched order quantity exactly.
         remainder = None
 
     return unmatched, order, matched_order, remainder
