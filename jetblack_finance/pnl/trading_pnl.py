@@ -27,7 +27,7 @@ class TradingPnl:
         order_pnl += trade.order
         self._book[trade.security.symbol] = order_pnl
 
-    def pnl_strip(
+    def strip(
             self,
             security: ISecurity,
             price: Union[int, Decimal],
@@ -36,7 +36,7 @@ class TradingPnl:
         if security.symbol not in self._book:
             raise KeyError()
 
-        strip = self._book[security.symbol].pnl_strip(price)
+        strip = self._book[security.symbol].strip(price)
         return TradePnlStrip(
             security.symbol,
             strip.quantity,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 from fractions import Fraction
-from typing import Tuple, Union, Optional
+from typing import Tuple, Optional
 
 
 from .iorder import IOrder

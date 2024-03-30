@@ -99,7 +99,7 @@ class OrderPnl:
     def unrealized(self, price: Union[Decimal, int]) -> Decimal:
         return self.quantity * price + self.cost
 
-    def pnl_strip(self, price: Union[Decimal, int]) -> OrderPnlStrip:
+    def strip(self, price: Union[Decimal, int]) -> OrderPnlStrip:
         return OrderPnlStrip(
             self.quantity,
             self.avg_cost,
