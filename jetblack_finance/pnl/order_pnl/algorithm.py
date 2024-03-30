@@ -1,4 +1,27 @@
-"""The algorithm for calculating P&L"""
+"""The algorithm for calculating P&L
+
+A position consists of a number of executed buy or sell orders. When the
+position is flat (the quantity of buys equals the quantity of sells) there is
+an unambiguous result for the p/l (the amount spent minus the amount received).
+Up until this point the p/l depends on which buys are matched with which sells,
+and which unmatched orders remain.
+
+Classically, accountants prefer a FIFO (first in, first out) style of matching.
+So if there has be three buys, a sell matches against the earliest buy.
+
+Traders sometimes prefer as "worst price" approach, were a sell is matched
+against the highest price buy.
+
+Regardless of the approach the p/l can be characterized by the following
+properties:
+
+* quantity - how much of the asset is held.
+* cost - how much has it cost to accrue the asset.
+* realized - how much profit (or loss) was realized by selling from a long position, or buying from a short.
+* unmatched - orders which have not yet been completely matched
+
+
+"""
 
 from typing import Callable, Optional, Sequence, Tuple
 
@@ -11,6 +34,17 @@ def _extend_position(
         pnl: OrderPnlState,
         order: ScaledOrder,
 ) -> OrderPnlState:
+    """Extend a long or flat position with a buy, or a short or flat position with a sell.
+
+    Extending a position simply accrues quantity, cost, and unmatched orders.
+
+    Args:
+        pnl (OrderPnlState): The current p/p state.
+        order (ScaledOrder): The order
+
+    Returns:
+        OrderPnlState: The new order state.
+    """
     return OrderPnlState(
         pnl.quantity + order.quantity,
         pnl.cost - order.quantity * order.price,
@@ -87,6 +121,17 @@ def _reduce_position(
         push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]],
 ) -> OrderPnlState:
+    """Reduce a long position with a sell, or a short position with a buy.
+
+    Args:
+        pnl (OrderPnlState): The current p/l state.
+        order (Optional[ScaledOrder]): The order
+        push_unmatched (Callable[[ScaledOrder, Unmatched], Unmatched]): A function to add an unmatched order on to a sequence of unmatched orders.
+        pop_unmatched (Callable[[Unmatched], tuple[ScaledOrder, Unmatched]]): A function to take an unmatched order from a sequence of unmatched orders.
+
+    Returns:
+        OrderPnlState: The new p/l state.
+    """
     while order is not None and order.quantity != 0 and pnl.unmatched:
         order, pnl = _match(
             pnl,
@@ -112,6 +157,24 @@ def add_scaled_order(
         push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]]
 ) -> OrderPnlState:
+    """Add an order creating a new p/l state.
+
+    Args:
+        pnl (OrderPnlState): The current p/l state.
+        order (ScaledOrder): The order to add.
+        push_unmatched (Callable[[ScaledOrder, Unmatched], Unmatched]): A
+            function to add a scaled order to the sequence of unmatched orders.
+        pop_unmatched (Callable[[Unmatched], tuple[ScaledOrder, Unmatched]]): A
+            function to take a scaled order from the sequence of unmatched
+            orders.
+
+    Returns:
+        OrderPnlState: The new p/l state.
+    """
+    # This order could extend the position (buy to make a long or flat position
+    # longer, or sell to make a short or flat position shorter), or reduce the
+    # position (by selling from a long position, or buying back from a short
+    # position)
     if (
         # We are flat
         pnl.quantity == 0 or
