@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from decimal import Decimal
-from typing import Any, Callable, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, NamedTuple, Optional, Sequence, Tuple, Union
 
 from .iorder import IOrder
 from .matched_order import MatchedOrder
@@ -15,98 +15,13 @@ Unmatched = Sequence[ScaledOrder]
 Matched = Sequence[MatchedOrder]
 
 
-class OrderPnl:
+class OrderPnlState(NamedTuple):
 
-    def __init__(
-        self,
-        quantity=Decimal(0),
-        cost=Decimal(0),
-        realized=Decimal(0),
-        unmatched: Optional[Unmatched] = None,
-        matched: Optional[Matched] = None
-    ) -> None:
-        self._quantity = quantity
-        self._cost = cost
-        self._realized = realized
-        self._unmatched = unmatched or []
-        self._matched = matched or []
-
-    @property
-    def quantity(self) -> Decimal:
-        return self._quantity
-
-    @property
-    def cost(self) -> Decimal:
-        return self._cost
-
-    @property
-    def realized(self) -> Decimal:
-        return self._realized
-
-    @property
-    def unmatched(self) -> Unmatched:
-        return self._unmatched
-
-    @property
-    def matched(self) -> Matched:
-        return self._matched
-
-    def __add__(self, other: Any) -> OrderPnl:
-        assert isinstance(other, IOrder)
-        return add_scaled_order(
-            self,
-            ScaledOrder(other),
-            self._push_unmatched,
-            self._pop_unmatched,
-            self._create
-        )
-
-    def __sub__(self, other: Any) -> OrderPnl:
-        assert isinstance(other, IOrder)
-        return add_scaled_order(
-            self,
-            -ScaledOrder(other),
-            self._push_unmatched,
-            self._pop_unmatched,
-            self._create
-        )
-
-    @abstractmethod
-    def _create(
-        self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: Unmatched,
-        matched: Matched
-    ) -> OrderPnl:
-        ...
-
-    @abstractmethod
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
-        ...
-
-    @abstractmethod
-    def _push_unmatched(self, order: ScaledOrder, unmatched: Unmatched) -> Unmatched:
-        ...
-
-    @property
-    def avg_cost(self) -> Decimal:
-        if self.quantity == 0:
-            return Decimal(0)
-        return -self.cost / self.quantity
-
-    def unrealized(self, price: Union[Decimal, int]) -> Decimal:
-        return self.quantity * price + self.cost
-
-    def strip(self, price: Union[Decimal, int]) -> OrderPnlStrip:
-        return OrderPnlStrip(
-            self.quantity,
-            self.avg_cost,
-            price,
-            self.realized,
-            self.unrealized(price)
-        )
+    quantity: Decimal
+    cost: Decimal
+    realized: Decimal
+    unmatched: Unmatched
+    matched: Matched
 
     def __repr__(self) -> str:
         return f"{self.quantity} @ {self.cost} + {self.realized}"
@@ -114,12 +29,15 @@ class OrderPnl:
 
 Create = Callable[
     [Decimal, Decimal, Decimal, Unmatched, Matched],
-    OrderPnl
+    OrderPnlState
 ]
 
 
-def _extend_position(pnl: OrderPnl, order: ScaledOrder, create: Create) -> OrderPnl:
-    return create(
+def _extend_position(
+        pnl: OrderPnlState,
+        order: ScaledOrder,
+) -> OrderPnlState:
+    return OrderPnlState(
         pnl.quantity + order.quantity,
         pnl.cost - order.quantity * order.price,
         pnl.realized,
@@ -159,12 +77,11 @@ def _find_match(
 
 
 def _match(
-        pnl: OrderPnl,
+        pnl: OrderPnlState,
         order: ScaledOrder,
         push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]],
-        create: Create
-) -> Tuple[Optional[ScaledOrder], OrderPnl]:
+) -> Tuple[Optional[ScaledOrder], OrderPnlState]:
     unmatched, close_order, open_order, remainder = _find_match(
         order,
         pnl.unmatched,
@@ -185,25 +102,23 @@ def _match(
 
     matched = list(pnl.matched) + [MatchedOrder(open_order, close_order)]
 
-    pnl = create(quantity, cost, realized, unmatched, matched)
+    pnl = OrderPnlState(quantity, cost, realized, unmatched, matched)
 
     return remainder, pnl
 
 
 def _reduce_position(
-        pnl: OrderPnl,
+        pnl: OrderPnlState,
         order: Optional[ScaledOrder],
         push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]],
-        create: Create
-) -> OrderPnl:
+) -> OrderPnlState:
     while order is not None and order.quantity != 0 and pnl.unmatched:
         order, pnl = _match(
             pnl,
             order,
             push_unmatched,
             pop_unmatched,
-            create
         )
 
     if order is not None and order.quantity != 0:
@@ -212,19 +127,17 @@ def _reduce_position(
             order,
             push_unmatched,
             pop_unmatched,
-            create
         )
 
     return pnl
 
 
 def add_scaled_order(
-        pnl: OrderPnl,
+        pnl: OrderPnlState,
         order: ScaledOrder,
         push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
-        pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]],
-        create: Create
-) -> OrderPnl:
+        pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]]
+) -> OrderPnlState:
     if (
         # We are flat
         pnl.quantity == 0 or
@@ -233,22 +146,116 @@ def add_scaled_order(
         # We are short and selling.
         (pnl.quantity < 0 and order.quantity < 0)
     ):
-        return _extend_position(pnl, order, create)
+        return _extend_position(pnl, order)
     else:
-        return _reduce_position(pnl, order, push_unmatched, pop_unmatched, create)
+        return _reduce_position(pnl, order, push_unmatched, pop_unmatched)
+
+
+class OrderPnl:
+
+    def __init__(
+        self,
+        quantity=Decimal(0),
+        cost=Decimal(0),
+        realized=Decimal(0),
+        unmatched: Optional[Unmatched] = None,
+        matched: Optional[Matched] = None
+    ) -> None:
+        self._state = OrderPnlState(
+            quantity,
+            cost,
+            realized,
+            unmatched or [],
+            matched or []
+        )
+
+    def __add__(self, other: Any) -> OrderPnl:
+        assert isinstance(other, IOrder)
+        state = add_scaled_order(
+            self._state,
+            ScaledOrder(other),
+            self._push_unmatched,
+            self._pop_unmatched,
+        )
+        return self._create(state)
+
+    def __sub__(self, other: Any) -> OrderPnl:
+        assert isinstance(other, IOrder)
+        state = add_scaled_order(
+            self._state,
+            -ScaledOrder(other),
+            self._push_unmatched,
+            self._pop_unmatched,
+        )
+        return self._create(state)
+
+    @abstractmethod
+    def _create(
+        self,
+        state: OrderPnlState
+    ) -> OrderPnl:
+        ...
+
+    @abstractmethod
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
+        ...
+
+    @abstractmethod
+    def _push_unmatched(self, order: ScaledOrder, unmatched: Unmatched) -> Unmatched:
+        ...
+
+    @property
+    def quantity(self) -> Decimal:
+        return self._state.quantity
+
+    @property
+    def cost(self) -> Decimal:
+        return self._state.cost
+
+    @property
+    def realized(self) -> Decimal:
+        return self._state.realized
+
+    @property
+    def unmatched(self) -> Unmatched:
+        return self._state.unmatched
+
+    @property
+    def matched(self) -> Matched:
+        return self._state.matched
+
+    @property
+    def avg_cost(self) -> Decimal:
+        if self.quantity == 0:
+            return Decimal(0)
+        return -self.cost / self.quantity
+
+    def unrealized(self, price: Union[Decimal, int]) -> Decimal:
+        return self.quantity * price + self.cost
+
+    def strip(self, price: Union[Decimal, int]) -> OrderPnlStrip:
+        return OrderPnlStrip(
+            self.quantity,
+            self.avg_cost,
+            price,
+            self.realized,
+            self.unrealized(price)
+        )
 
 
 class FifoOrderPnl(OrderPnl):
 
     def _create(
         self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: Unmatched,
-        matched: Matched
-    ) -> OrderPnl:
-        return FifoOrderPnl(quantity, cost, realized, unmatched, matched)
+        state: OrderPnlState
+    ) -> FifoOrderPnl:
+        return FifoOrderPnl(
+            state.quantity,
+            state.cost,
+            state.realized,
+            state.unmatched,
+            state.matched
+        )
 
     def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
         return unmatched[0], unmatched[1:]
@@ -261,13 +268,15 @@ class LifoOrderPnl(OrderPnl):
 
     def _create(
         self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: Unmatched,
-        matched: Matched
-    ) -> OrderPnl:
-        return LifoOrderPnl(quantity, cost, realized, unmatched, matched)
+        state: OrderPnlState
+    ) -> LifoOrderPnl:
+        return LifoOrderPnl(
+            state.quantity,
+            state.cost,
+            state.realized,
+            state.unmatched,
+            state.matched
+        )
 
     def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
         return unmatched[-1], unmatched[:-1]
@@ -280,13 +289,15 @@ class BestPriceOrderPnl(OrderPnl):
 
     def _create(
         self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: Unmatched,
-        matched: Matched
-    ) -> OrderPnl:
-        return BestPriceOrderPnl(quantity, cost, realized, unmatched, matched)
+        state: OrderPnlState
+    ) -> BestPriceOrderPnl:
+        return BestPriceOrderPnl(
+            state.quantity,
+            state.cost,
+            state.realized,
+            state.unmatched,
+            state.matched
+        )
 
     def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
         orders = sorted(unmatched, key=lambda x: x.price)
@@ -305,13 +316,15 @@ class WorstPriceOrderPnl(OrderPnl):
 
     def _create(
         self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: Unmatched,
-        matched: Matched
-    ) -> OrderPnl:
-        return WorstPriceOrderPnl(quantity, cost, realized, unmatched, matched)
+        state: OrderPnlState
+    ) -> WorstPriceOrderPnl:
+        return WorstPriceOrderPnl(
+            state.quantity,
+            state.cost,
+            state.realized,
+            state.unmatched,
+            state.matched
+        )
 
     def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
         orders = sorted(unmatched, key=lambda x: x.price)
