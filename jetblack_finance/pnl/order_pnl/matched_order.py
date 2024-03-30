@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
-from .scaled_order import ScaledOrder
+from .split_order import SplitOrder
 
 
 class MatchedOrder(NamedTuple):
     """A matched order"""
 
-    opening: ScaledOrder
+    opening: SplitOrder
     """The opening order"""
 
-    closing: ScaledOrder
+    closing: SplitOrder
     """The closing order"""
 
     def __repr__(self) -> str:

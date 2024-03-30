@@ -26,13 +26,13 @@ properties:
 from typing import Callable, Optional, Sequence, Tuple
 
 from .matched_order import MatchedOrder
-from .scaled_order import ScaledOrder
+from .split_order import SplitOrder
 from .order_pnl_state import OrderPnlState, Unmatched
 
 
 def _extend_position(
         pnl: OrderPnlState,
-        order: ScaledOrder,
+        order: SplitOrder,
 ) -> OrderPnlState:
     """Extend a long or flat position with a buy, or a short or flat position with a sell.
 
@@ -55,11 +55,11 @@ def _extend_position(
 
 
 def _find_match(
-        order_candidate: ScaledOrder,
-        unmatched: Sequence[ScaledOrder],
-        push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
-        pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]]
-) -> Tuple[Unmatched, ScaledOrder, ScaledOrder, Optional[ScaledOrder]]:
+        order_candidate: SplitOrder,
+        unmatched: Sequence[SplitOrder],
+        push_unmatched: Callable[[SplitOrder, Unmatched], Unmatched],
+        pop_unmatched: Callable[[Unmatched], tuple[SplitOrder, Unmatched]]
+) -> Tuple[Unmatched, SplitOrder, SplitOrder, Optional[SplitOrder]]:
     match_candidate, unmatched = pop_unmatched(unmatched)
 
     if abs(order_candidate.quantity) >= abs(match_candidate.quantity):
@@ -86,10 +86,10 @@ def _find_match(
 
 def _match(
         pnl: OrderPnlState,
-        order: ScaledOrder,
-        push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
-        pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]],
-) -> Tuple[Optional[ScaledOrder], OrderPnlState]:
+        order: SplitOrder,
+        push_unmatched: Callable[[SplitOrder, Unmatched], Unmatched],
+        pop_unmatched: Callable[[Unmatched], tuple[SplitOrder, Unmatched]],
+) -> Tuple[Optional[SplitOrder], OrderPnlState]:
     unmatched, close_order, open_order, remainder = _find_match(
         order,
         pnl.unmatched,
@@ -117,9 +117,9 @@ def _match(
 
 def _reduce_position(
         pnl: OrderPnlState,
-        order: Optional[ScaledOrder],
-        push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
-        pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]],
+        order: Optional[SplitOrder],
+        push_unmatched: Callable[[SplitOrder, Unmatched], Unmatched],
+        pop_unmatched: Callable[[Unmatched], tuple[SplitOrder, Unmatched]],
 ) -> OrderPnlState:
     """Reduce a long position with a sell, or a short position with a buy.
 
@@ -153,9 +153,9 @@ def _reduce_position(
 
 def add_scaled_order(
         pnl: OrderPnlState,
-        order: ScaledOrder,
-        push_unmatched: Callable[[ScaledOrder, Unmatched], Unmatched],
-        pop_unmatched: Callable[[Unmatched], tuple[ScaledOrder, Unmatched]]
+        order: SplitOrder,
+        push_unmatched: Callable[[SplitOrder, Unmatched], Unmatched],
+        pop_unmatched: Callable[[Unmatched], tuple[SplitOrder, Unmatched]]
 ) -> OrderPnlState:
     """Add an order creating a new p/l state.
 

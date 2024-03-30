@@ -4,9 +4,9 @@ from decimal import Decimal
 from typing import Sequence
 
 from .matched_order import MatchedOrder
-from .scaled_order import ScaledOrder
+from .split_order import SplitOrder
 
-Unmatched = Sequence[ScaledOrder]
+Unmatched = Sequence[SplitOrder]
 Matched = Sequence[MatchedOrder]
 
 

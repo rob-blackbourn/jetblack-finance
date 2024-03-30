@@ -1,13 +1,13 @@
 """Tests for scaled orders"""
 
-from jetblack_finance.pnl.order_pnl.scaled_order import ScaledOrder
+from jetblack_finance.pnl.order_pnl.split_order import SplitOrder
 
 
 from .utils import Order
 
 
 def test_split_long():
-    order = ScaledOrder(Order(10, 2))
+    order = SplitOrder(Order(10, 2))
     matched, order = order.split(4)
     assert matched.quantity == 4
     assert order.quantity == 6
@@ -22,7 +22,7 @@ def test_split_long():
 
 
 def test_split_short():
-    order = ScaledOrder(Order(-10, 2))
+    order = SplitOrder(Order(-10, 2))
     matched, order = order.split(-4)
     assert matched.quantity == -4
     assert order.quantity == -6
@@ -37,7 +37,7 @@ def test_split_short():
 
 
 def test_split_long_neg():
-    order = -ScaledOrder(Order(10, 2))
+    order = -SplitOrder(Order(10, 2))
     matched, order = order.split(-4)
     assert matched.quantity == -4
     assert order.quantity == -6
@@ -53,7 +53,7 @@ def test_split_long_neg():
 
 def test_split_short_neg():
 
-    order = -ScaledOrder(Order(-10, 2))
+    order = -SplitOrder(Order(-10, 2))
     matched, order = order.split(4)
     assert matched.quantity == 4
     assert order.quantity == 6

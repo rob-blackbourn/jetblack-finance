@@ -9,7 +9,7 @@ from typing import Literal, Tuple, Optional
 from .iorder import IOrder
 
 
-class ScaledOrder:
+class SplitOrder:
 
     def __init__(
             self,
@@ -37,15 +37,15 @@ class ScaledOrder:
     def order(self) -> IOrder:
         return self._order
 
-    def split(self, quantity: Decimal) -> Tuple[ScaledOrder, ScaledOrder]:
+    def split(self, quantity: Decimal) -> Tuple[SplitOrder, SplitOrder]:
         assert abs(self.quantity) >= abs(quantity)
         unused = self.quantity - quantity
-        matched = ScaledOrder(self._order, self._used + unused, self._sign)
-        unmatched = ScaledOrder(self._order, self._used + quantity, self._sign)
+        matched = SplitOrder(self._order, self._used + unused, self._sign)
+        unmatched = SplitOrder(self._order, self._used + quantity, self._sign)
         return matched, unmatched
 
-    def __neg__(self) -> ScaledOrder:
-        return ScaledOrder(
+    def __neg__(self) -> SplitOrder:
+        return SplitOrder(
             self._order,
             self._used,
             1 if self._sign == -1 else -1
@@ -53,7 +53,7 @@ class ScaledOrder:
 
     def __eq__(self, value: object) -> bool:
         return (
-            isinstance(value, ScaledOrder) and
+            isinstance(value, SplitOrder) and
             self._order == value._order and
             self._used == value._used and
             self._sign == value._sign

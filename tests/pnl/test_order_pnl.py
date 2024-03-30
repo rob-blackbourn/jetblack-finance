@@ -1,7 +1,6 @@
 """Tests for order P&L"""
 
 from decimal import Decimal
-from fractions import Fraction
 
 from jetblack_finance.pnl import (
     FifoOrderPnl,
@@ -10,7 +9,7 @@ from jetblack_finance.pnl import (
     WorstPriceOrderPnl,
 )
 from jetblack_finance.pnl.order_pnl.order_pnl_state import MatchedOrder
-from jetblack_finance.pnl.order_pnl.scaled_order import ScaledOrder
+from jetblack_finance.pnl.order_pnl.split_order import SplitOrder
 
 
 from .utils import Order
@@ -233,8 +232,8 @@ def test_long_to_short_fifo_with_profit():
     assert len(order_pnl.unmatched) == 0
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 100)),
-            ScaledOrder(Order(-1, 102))
+            SplitOrder(Order(1, 100)),
+            SplitOrder(Order(-1, 102))
         )
     ]
 
@@ -252,8 +251,8 @@ def test_short_to_long_fifo_with_profit():
     assert len(order_pnl.unmatched) == 0
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(-1, 102)),
-            ScaledOrder(Order(1, 100))
+            SplitOrder(Order(-1, 102)),
+            SplitOrder(Order(1, 100))
         )
     ]
 
@@ -271,8 +270,8 @@ def test_long_to_short_fifo_with_loss():
     assert len(order_pnl.unmatched) == 0
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 102)),
-            ScaledOrder(Order(-1, 100))
+            SplitOrder(Order(1, 102)),
+            SplitOrder(Order(-1, 100))
         )
     ]
 
@@ -290,8 +289,8 @@ def test_short_to_long_fifo_with_loss():
     assert len(order_pnl.unmatched) == 0
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(-1, 100)),
-            ScaledOrder(Order(1, 102))
+            SplitOrder(Order(-1, 100)),
+            SplitOrder(Order(1, 102))
         )
     ]
 
@@ -306,12 +305,12 @@ def test_long_sell_fifo_through_flat():
     assert order_pnl.cost == 102
     assert order_pnl.realized == 1
     assert list(order_pnl.unmatched) == [
-        ScaledOrder(Order(-2, 102), -1, 1)
+        SplitOrder(Order(-2, 102), -1, 1)
     ]
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 101), 0, 1),
-            ScaledOrder(Order(-2, 102), -1, 1)
+            SplitOrder(Order(1, 101), 0, 1),
+            SplitOrder(Order(-2, 102), -1, 1)
         )
     ]
 
@@ -326,12 +325,12 @@ def test_short_buy_fifo_through_flat():
     assert order_pnl.cost == -101
     assert order_pnl.realized == 1
     assert list(order_pnl.unmatched) == [
-        ScaledOrder(Order(2, 101), 1, 1)
+        SplitOrder(Order(2, 101), 1, 1)
     ]
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(-1, 102), 0, 1),
-            ScaledOrder(Order(2, 101), 1, 1)
+            SplitOrder(Order(-1, 102), 0, 1),
+            SplitOrder(Order(2, 101), 1, 1)
         )
     ]
 
@@ -352,12 +351,12 @@ def test_one_buy_many_sells_fifo():
     assert len(order_pnl.unmatched) == 0
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(10, 101), 5, 1),
-            ScaledOrder(Order(-5, 102), 0, 1)
+            SplitOrder(Order(10, 101), 5, 1),
+            SplitOrder(Order(-5, 102), 0, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(10, 101), 5, 1),
-            ScaledOrder(Order(-5, 104), 0, 1)
+            SplitOrder(Order(10, 101), 5, 1),
+            SplitOrder(Order(-5, 104), 0, 1)
         ),
     ]
 
@@ -404,24 +403,24 @@ def test_many_buys_one_sell_fifo():
     order_pnl = order_pnl + Order(-5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 100), 0, 1),
-            ScaledOrder(Order(-5, 104), -4, 1)
+            SplitOrder(Order(1, 100), 0, 1),
+            SplitOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 102), 0, 1),
-            ScaledOrder(Order(-5, 104), -4, 1)
+            SplitOrder(Order(1, 102), 0, 1),
+            SplitOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 101), 0, 1),
-            ScaledOrder(Order(-5, 104), -4, 1)
+            SplitOrder(Order(1, 101), 0, 1),
+            SplitOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 104), 0, 1),
-            ScaledOrder(Order(-5, 104), -4, 1)
+            SplitOrder(Order(1, 104), 0, 1),
+            SplitOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 103), 0, 1),
-            ScaledOrder(Order(-5, 104), -4, 1)
+            SplitOrder(Order(1, 103), 0, 1),
+            SplitOrder(Order(-5, 104), -4, 1)
         ),
     ]
 
@@ -438,24 +437,24 @@ def test_many_buys_one_sell_lifo():
     order_pnl = order_pnl + Order(-5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 103), 0, 1),
-            ScaledOrder(Order(-5, 104), -4, 1)
+            SplitOrder(Order(1, 103), 0, 1),
+            SplitOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 104), 0, 1),
-            ScaledOrder(Order(-5, 104), -4, 1)
+            SplitOrder(Order(1, 104), 0, 1),
+            SplitOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 101), 0, 1),
-            ScaledOrder(Order(-5, 104), -4, 1)
+            SplitOrder(Order(1, 101), 0, 1),
+            SplitOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 102), 0, 1),
-            ScaledOrder(Order(-5, 104), -4, 1)
+            SplitOrder(Order(1, 102), 0, 1),
+            SplitOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 100), 0, 1),
-            ScaledOrder(Order(-5, 104), -4, 1)
+            SplitOrder(Order(1, 100), 0, 1),
+            SplitOrder(Order(-5, 104), -4, 1)
         ),
     ]
 
@@ -472,24 +471,24 @@ def test_many_buys_one_sell_best_price():
     order_pnl = order_pnl + Order(-5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 100), 0),
-            ScaledOrder(Order(-5, 104), -4)
+            SplitOrder(Order(1, 100), 0),
+            SplitOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 101), 0),
-            ScaledOrder(Order(-5, 104), -4)
+            SplitOrder(Order(1, 101), 0),
+            SplitOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 102), 0),
-            ScaledOrder(Order(-5, 104), -4)
+            SplitOrder(Order(1, 102), 0),
+            SplitOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 103), 0),
-            ScaledOrder(Order(-5, 104), -4)
+            SplitOrder(Order(1, 103), 0),
+            SplitOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 104), 0),
-            ScaledOrder(Order(-5, 104), -4)
+            SplitOrder(Order(1, 104), 0),
+            SplitOrder(Order(-5, 104), -4)
         ),
     ]
 
@@ -506,24 +505,24 @@ def test_many_sells_one_buy_best_price():
     order_pnl = order_pnl + Order(5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(-1, 104), 0, 1),
-            ScaledOrder(Order(5, 104), 4)
+            SplitOrder(Order(-1, 104), 0, 1),
+            SplitOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 103), 0, 1),
-            ScaledOrder(Order(5, 104), 4)
+            SplitOrder(Order(-1, 103), 0, 1),
+            SplitOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 102), 0, 1),
-            ScaledOrder(Order(5, 104), 4)
+            SplitOrder(Order(-1, 102), 0, 1),
+            SplitOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 101), 0, 1),
-            ScaledOrder(Order(5, 104), 4)
+            SplitOrder(Order(-1, 101), 0, 1),
+            SplitOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 100), 0, 1),
-            ScaledOrder(Order(5, 104), 4)
+            SplitOrder(Order(-1, 100), 0, 1),
+            SplitOrder(Order(5, 104), 4)
         ),
     ]
 
@@ -540,24 +539,24 @@ def test_many_buys_one_sell_worst_price():
     order_pnl = order_pnl + Order(-5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 104), 0),
-            ScaledOrder(Order(-5, 104), -4)
+            SplitOrder(Order(1, 104), 0),
+            SplitOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 103), 0),
-            ScaledOrder(Order(-5, 104), -4)
+            SplitOrder(Order(1, 103), 0),
+            SplitOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 102), 0),
-            ScaledOrder(Order(-5, 104), -4)
+            SplitOrder(Order(1, 102), 0),
+            SplitOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 101), 0),
-            ScaledOrder(Order(-5, 104), -4)
+            SplitOrder(Order(1, 101), 0),
+            SplitOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 100), 0),
-            ScaledOrder(Order(-5, 104), -4)
+            SplitOrder(Order(1, 100), 0),
+            SplitOrder(Order(-5, 104), -4)
         ),
     ]
 
@@ -574,24 +573,24 @@ def test_many_sells_one_buy_worst_price():
     order_pnl = order_pnl + Order(5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(-1, 100), 0),
-            ScaledOrder(Order(5, 104), 4)
+            SplitOrder(Order(-1, 100), 0),
+            SplitOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 101), 0),
-            ScaledOrder(Order(5, 104), 4)
+            SplitOrder(Order(-1, 101), 0),
+            SplitOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 102), 0),
-            ScaledOrder(Order(5, 104), 4)
+            SplitOrder(Order(-1, 102), 0),
+            SplitOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 103), 0),
-            ScaledOrder(Order(5, 104), 4)
+            SplitOrder(Order(-1, 103), 0),
+            SplitOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 104), 0),
-            ScaledOrder(Order(5, 104), 4)
+            SplitOrder(Order(-1, 104), 0),
+            SplitOrder(Order(5, 104), 4)
         ),
     ]
 

@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Any, Optional, Union
 
 from .iorder import IOrder
-from .scaled_order import ScaledOrder
+from .split_order import SplitOrder
 from .order_pnl_strip import OrderPnlStrip
 from .order_pnl_state import OrderPnlState, Matched, Unmatched
 from .algorithm import add_scaled_order
@@ -35,7 +35,7 @@ class OrderPnl(OrderPnlState):
         assert isinstance(other, IOrder)
         state = add_scaled_order(
             self,
-            ScaledOrder(other),
+            SplitOrder(other),
             self._push_unmatched,
             self._pop_unmatched,
         )
@@ -45,7 +45,7 @@ class OrderPnl(OrderPnlState):
         assert isinstance(other, IOrder)
         state = add_scaled_order(
             self,
-            -ScaledOrder(other),
+            -SplitOrder(other),
             self._push_unmatched,
             self._pop_unmatched,
         )
@@ -59,11 +59,11 @@ class OrderPnl(OrderPnlState):
         ...
 
     @abstractmethod
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitOrder, Unmatched]:
         ...
 
     @abstractmethod
-    def _push_unmatched(self, order: ScaledOrder, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: SplitOrder, unmatched: Unmatched) -> Unmatched:
         ...
 
     @property
@@ -99,10 +99,10 @@ class FifoOrderPnl(OrderPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitOrder, Unmatched]:
         return unmatched[0], unmatched[1:]
 
-    def _push_unmatched(self, order: ScaledOrder, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: SplitOrder, unmatched: Unmatched) -> Unmatched:
         return [order] + list(unmatched)
 
 
@@ -120,10 +120,10 @@ class LifoOrderPnl(OrderPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitOrder, Unmatched]:
         return unmatched[-1], unmatched[:-1]
 
-    def _push_unmatched(self, order: ScaledOrder, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: SplitOrder, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
 
 
@@ -141,7 +141,7 @@ class BestPriceOrderPnl(OrderPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitOrder, Unmatched]:
         orders = sorted(unmatched, key=lambda x: x.price)
         order, orders = (
             (orders[0], orders[1:])
@@ -150,7 +150,7 @@ class BestPriceOrderPnl(OrderPnl):
         )
         return order, orders
 
-    def _push_unmatched(self, order: ScaledOrder, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: SplitOrder, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
 
 
@@ -168,7 +168,7 @@ class WorstPriceOrderPnl(OrderPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ScaledOrder, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitOrder, Unmatched]:
         orders = sorted(unmatched, key=lambda x: x.price)
         order, orders = (
             (orders[-1], orders[:-1])
@@ -177,5 +177,5 @@ class WorstPriceOrderPnl(OrderPnl):
         )
         return order, orders
 
-    def _push_unmatched(self, order: ScaledOrder, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: SplitOrder, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
