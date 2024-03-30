@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from fractions import Fraction
-from typing import Tuple, Optional
+from typing import Literal, Tuple, Optional
 
 
 from .iorder import IOrder
@@ -15,21 +14,20 @@ class ScaledOrder:
     def __init__(
             self,
             order: IOrder,
-            scale: Optional[Fraction] = None
+            used: Optional[Decimal] = None,
+            sign: Literal[1, -1] = 1
     ) -> None:
         self._order = order
-        self._scale: Fraction = (
-            scale
-            if scale is not None
-            else Fraction(1)
+        self._used: Decimal = (
+            used
+            if used is not None
+            else Decimal(0)
         )
-        if self._scale > 1:
-            raise ValueError(f"invalid scale '{self._scale}'")
+        self._sign = sign
 
     @property
     def quantity(self) -> Decimal:
-        quantity = Fraction(self._order.quantity) * self._scale
-        return Decimal(quantity.numerator) / Decimal(quantity.denominator)
+        return self._order.quantity * self._sign - self._used
 
     @property
     def price(self) -> Decimal:
@@ -40,26 +38,26 @@ class ScaledOrder:
         return self._order
 
     def split(self, quantity: Decimal) -> Tuple[ScaledOrder, ScaledOrder]:
-        if abs(quantity) > abs(self.quantity):
-            raise ValueError("invalid quantity")
-        remainder = self.quantity - quantity
-        denominator = Fraction(self._order.quantity)
-        matched = ScaledOrder(self._order, Fraction(quantity) / denominator)
-        unmatched = ScaledOrder(self._order, Fraction(remainder) / denominator)
+        assert abs(self.quantity) >= abs(quantity)
+        unused = self.quantity - quantity
+        matched = ScaledOrder(self._order, self._used + unused, self._sign)
+        unmatched = ScaledOrder(self._order, self._used + quantity, self._sign)
         return matched, unmatched
 
     def __neg__(self) -> ScaledOrder:
         return ScaledOrder(
             self._order,
-            -self._scale  # pylint: disable=invalid-unary-operand-type
+            self._used,
+            1 if self._sign == -1 else -1
         )
 
     def __eq__(self, value: object) -> bool:
         return (
             isinstance(value, ScaledOrder) and
             self._order == value._order and
-            self._scale == value._scale
+            self._used == value._used and
+            self._sign == value._sign
         )
 
     def __repr__(self) -> str:
-        return f"{self.quantity} (of {self._order.quantity}) @ {self.price}"
+        return f"{self.quantity} (of {self._order.quantity * self._sign}) @ {self.price}"

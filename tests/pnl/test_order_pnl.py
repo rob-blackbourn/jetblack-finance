@@ -306,12 +306,12 @@ def test_long_sell_fifo_through_flat():
     assert order_pnl.cost == 102
     assert order_pnl.realized == 1
     assert list(order_pnl.unmatched) == [
-        ScaledOrder(Order(-2, 102), Fraction(1, 2))
+        ScaledOrder(Order(-2, 102), -1, 1)
     ]
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 101), Fraction(1)),
-            ScaledOrder(Order(-2, 102), Fraction(1, 2))
+            ScaledOrder(Order(1, 101), 0, 1),
+            ScaledOrder(Order(-2, 102), -1, 1)
         )
     ]
 
@@ -326,12 +326,12 @@ def test_short_buy_fifo_through_flat():
     assert order_pnl.cost == -101
     assert order_pnl.realized == 1
     assert list(order_pnl.unmatched) == [
-        ScaledOrder(Order(2, 101), Fraction(1, 2))
+        ScaledOrder(Order(2, 101), 1, 1)
     ]
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(-1, 102), Fraction(1)),
-            ScaledOrder(Order(2, 101), Fraction(1, 2))
+            ScaledOrder(Order(-1, 102), 0, 1),
+            ScaledOrder(Order(2, 101), 1, 1)
         )
     ]
 
@@ -352,12 +352,12 @@ def test_one_buy_many_sells_fifo():
     assert len(order_pnl.unmatched) == 0
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(10, 101), Fraction(1, 2)),
-            ScaledOrder(Order(-5, 102), Fraction(1))
+            ScaledOrder(Order(10, 101), 5, 1),
+            ScaledOrder(Order(-5, 102), 0, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(10, 101), Fraction(1, 2)),
-            ScaledOrder(Order(-5, 104), Fraction(1))
+            ScaledOrder(Order(10, 101), 5, 1),
+            ScaledOrder(Order(-5, 104), 0, 1)
         ),
     ]
 
@@ -404,24 +404,24 @@ def test_many_buys_one_sell_fifo():
     order_pnl = order_pnl + Order(-5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 100), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 100), 0, 1),
+            ScaledOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 102), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 102), 0, 1),
+            ScaledOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 101), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 101), 0, 1),
+            ScaledOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 104), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 104), 0, 1),
+            ScaledOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 103), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 103), 0, 1),
+            ScaledOrder(Order(-5, 104), -4, 1)
         ),
     ]
 
@@ -438,24 +438,24 @@ def test_many_buys_one_sell_lifo():
     order_pnl = order_pnl + Order(-5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 103), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 103), 0, 1),
+            ScaledOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 104), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 104), 0, 1),
+            ScaledOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 101), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 101), 0, 1),
+            ScaledOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 102), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 102), 0, 1),
+            ScaledOrder(Order(-5, 104), -4, 1)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 100), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 100), 0, 1),
+            ScaledOrder(Order(-5, 104), -4, 1)
         ),
     ]
 
@@ -472,24 +472,24 @@ def test_many_buys_one_sell_best_price():
     order_pnl = order_pnl + Order(-5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 100), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 100), 0),
+            ScaledOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 101), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 101), 0),
+            ScaledOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 102), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 102), 0),
+            ScaledOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 103), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 103), 0),
+            ScaledOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 104), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 104), 0),
+            ScaledOrder(Order(-5, 104), -4)
         ),
     ]
 
@@ -506,24 +506,24 @@ def test_many_sells_one_buy_best_price():
     order_pnl = order_pnl + Order(5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(-1, 104), Fraction(1)),
-            ScaledOrder(Order(5, 104), Fraction(1, 5))
+            ScaledOrder(Order(-1, 104), 0, 1),
+            ScaledOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 103), Fraction(1)),
-            ScaledOrder(Order(5, 104), Fraction(1, 5))
+            ScaledOrder(Order(-1, 103), 0, 1),
+            ScaledOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 102), Fraction(1)),
-            ScaledOrder(Order(5, 104), Fraction(1, 5))
+            ScaledOrder(Order(-1, 102), 0, 1),
+            ScaledOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 101), Fraction(1)),
-            ScaledOrder(Order(5, 104), Fraction(1, 5))
+            ScaledOrder(Order(-1, 101), 0, 1),
+            ScaledOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 100), Fraction(1)),
-            ScaledOrder(Order(5, 104), Fraction(1, 5))
+            ScaledOrder(Order(-1, 100), 0, 1),
+            ScaledOrder(Order(5, 104), 4)
         ),
     ]
 
@@ -540,24 +540,24 @@ def test_many_buys_one_sell_worst_price():
     order_pnl = order_pnl + Order(-5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(1, 104), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 104), 0),
+            ScaledOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 103), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 103), 0),
+            ScaledOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 102), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 102), 0),
+            ScaledOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 101), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 101), 0),
+            ScaledOrder(Order(-5, 104), -4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(1, 100), Fraction(1)),
-            ScaledOrder(Order(-5, 104), Fraction(1, 5))
+            ScaledOrder(Order(1, 100), 0),
+            ScaledOrder(Order(-5, 104), -4)
         ),
     ]
 
@@ -574,24 +574,24 @@ def test_many_sells_one_buy_worst_price():
     order_pnl = order_pnl + Order(5, 104)
     assert order_pnl.matched == [
         MatchedOrder(
-            ScaledOrder(Order(-1, 100), Fraction(1)),
-            ScaledOrder(Order(5, 104), Fraction(1, 5))
+            ScaledOrder(Order(-1, 100), 0),
+            ScaledOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 101), Fraction(1)),
-            ScaledOrder(Order(5, 104), Fraction(1, 5))
+            ScaledOrder(Order(-1, 101), 0),
+            ScaledOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 102), Fraction(1)),
-            ScaledOrder(Order(5, 104), Fraction(1, 5))
+            ScaledOrder(Order(-1, 102), 0),
+            ScaledOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 103), Fraction(1)),
-            ScaledOrder(Order(5, 104), Fraction(1, 5))
+            ScaledOrder(Order(-1, 103), 0),
+            ScaledOrder(Order(5, 104), 4)
         ),
         MatchedOrder(
-            ScaledOrder(Order(-1, 104), Fraction(1)),
-            ScaledOrder(Order(5, 104), Fraction(1, 5))
+            ScaledOrder(Order(-1, 104), 0),
+            ScaledOrder(Order(5, 104), 4)
         ),
     ]
 
