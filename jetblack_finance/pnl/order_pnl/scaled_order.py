@@ -1,4 +1,4 @@
-"""Types"""
+"""A scaled order"""
 
 from __future__ import annotations
 

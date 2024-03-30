@@ -1,4 +1,4 @@
-"""A calculator for P&L on orders"""
+"""The algorithm for calculating P&L"""
 
 from typing import Callable, Optional, Sequence, Tuple
 

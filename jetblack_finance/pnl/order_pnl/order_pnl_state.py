@@ -1,4 +1,4 @@
-"""A calculator for P&L on orders"""
+"""A class representing the state of the P&L calculation"""
 
 from decimal import Decimal
 from typing import Sequence

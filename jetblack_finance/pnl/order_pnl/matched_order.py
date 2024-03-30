@@ -1,4 +1,4 @@
-"""MatchedTrade"""
+"""MatchedOrder"""
 
 from __future__ import annotations
 
