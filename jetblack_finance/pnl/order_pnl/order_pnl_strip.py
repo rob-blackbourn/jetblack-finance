@@ -1,4 +1,4 @@
-"""Types"""
+"""The strip of P&L values"""
 
 from __future__ import annotations
 

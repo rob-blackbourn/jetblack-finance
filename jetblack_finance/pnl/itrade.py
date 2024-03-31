@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Protocol
 
-from .iorder import IOrder
+from .order_pnl import IOrder
 from .isecurity import ISecurity
 
 

@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from decimal import Decimal
-from typing import Callable, Dict, Iterator, List, Mapping, Union
+from typing import Callable, Union
 
-from jetblack_finance.pnl.order_pnl import IOrderPnl
-
-from .order_pnl import IOrderPnl
-from .symbol_pnl import SymbolPnl
+from .order_pnl import OrderPnl
 from .isecurity import ISecurity
 from .itrade import ITrade
 from .trade_pnl_strip import TradePnlStrip
@@ -18,16 +16,18 @@ class TradingPnl:
 
     def __init__(
             self,
-            order_pnl_factory: Callable[[], IOrderPnl],
+            order_pnl_factory: Callable[[], OrderPnl],
             base_ccy: str
     ) -> None:
-        self._book = SymbolPnl(order_pnl_factory)
+        self._book: dict[str, OrderPnl] = defaultdict(order_pnl_factory)
         self.base_ccy = base_ccy
 
     def add(self, trade: ITrade) -> None:
-        self._book[trade.security.symbol].add(trade.order)
+        order_pnl = self._book[trade.security.symbol]
+        order_pnl += trade.order
+        self._book[trade.security.symbol] = order_pnl
 
-    def pnl_strip(
+    def strip(
             self,
             security: ISecurity,
             price: Union[int, Decimal],
@@ -36,7 +36,7 @@ class TradingPnl:
         if security.symbol not in self._book:
             raise KeyError()
 
-        strip = self._book[security.symbol].pnl_strip(price)
+        strip = self._book[security.symbol].strip(price)
         return TradePnlStrip(
             security.symbol,
             strip.quantity,
