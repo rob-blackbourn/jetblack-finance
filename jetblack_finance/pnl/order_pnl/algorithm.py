@@ -6,10 +6,10 @@ an unambiguous result for the p/l (the amount spent minus the amount received).
 Up until this point the p/l depends on which buys are matched with which sells,
 and which unmatched orders remain.
 
-Classically, accountants prefer a FIFO (first in, first out) style of matching.
+Typically, accountants prefer a FIFO (first in, first out) style of matching.
 So if there has be three buys, a sell matches against the earliest buy.
 
-Traders sometimes prefer as "worst price" approach, were a sell is matched
+Traders sometimes prefer a "worst price" approach, were a sell is matched
 against the highest price buy.
 
 Regardless of the approach the p/l can be characterized by the following
@@ -19,7 +19,20 @@ properties:
 * cost - how much has it cost to accrue the asset.
 * realized - how much profit (or loss) was realized by selling from a long
   position, or buying from a short.
-* unmatched - orders which have not yet been completely matched
+* unmatched - orders which have not yet been completely matched.
+
+If the new order extends the position (a buy from a long or flat position or a
+sell from a flat or short position) the quantity increases by that of the order
+and also the cost.
+
+If the order reduces the position a matching order must be found. Taking FIFO
+as the method, the oldest order is taken. There are three possibilities: The
+matching order might be exactly the same quantity (but of opposite sign), the
+order might have the larger quantity, or the match might have the larger quantity.
+Where the quantities don't match exactly there must be a split. If the match
+quantity is greater, the match is split and the spare is returned to the unmatched.
+If the order is larger it is split and the remainder becomes the next order to
+match.
 """
 
 from typing import Callable, Optional, Sequence, Tuple
