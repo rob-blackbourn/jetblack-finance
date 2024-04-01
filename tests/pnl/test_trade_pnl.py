@@ -7,12 +7,10 @@ from jetblack_finance.pnl import (
     LifoPnl,
     BestPricePnl,
     WorstPricePnl,
+    Trade,
+    SplitTrade
 )
 from jetblack_finance.pnl.pnl_state import MatchedTrade
-from jetblack_finance.pnl.split_trade import SplitTrade
-
-
-from .utils import Trade
 
 
 def test_long_to_short_with_splits_best_price():

@@ -1,6 +1,6 @@
 """pnl"""
 
-from .itrade import ITrade
+from .trade import ITrade, Trade
 from .pnl_implementations import (
     ABCPnl,
     FifoPnl,
@@ -8,13 +8,18 @@ from .pnl_implementations import (
     BestPricePnl,
     WorstPricePnl,
 )
+from .split_trade import ISplitTrade, SplitTrade
 
 __all__ = [
     'ITrade',
+    'Trade',
 
     'ABCPnl',
     'FifoPnl',
     'LifoPnl',
     'BestPricePnl',
     'WorstPricePnl',
+
+    'ISplitTrade',
+    'SplitTrade'
 ]

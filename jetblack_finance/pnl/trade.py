@@ -1,11 +1,26 @@
-"""Utilities for P/L tests"""
+"""ITrade"""
 
+from __future__ import annotations
+
+from abc import abstractmethod
 from decimal import Decimal
-from typing import Union
-
-from jetblack_finance.pnl import ITrade
+from typing import Protocol, Union, runtime_checkable
 
 Number = Union[Decimal, int]
+
+
+@runtime_checkable
+class ITrade(Protocol):
+
+    @property
+    @abstractmethod
+    def quantity(self) -> Decimal:
+        ...
+
+    @property
+    @abstractmethod
+    def price(self) -> Decimal:
+        ...
 
 
 def _to_decimal(number: Number) -> Decimal:
@@ -28,9 +43,6 @@ class Trade(ITrade):
     @property
     def price(self) -> Decimal:
         return self._price
-
-    def make_trade(self, quantity: Decimal) -> ITrade:
-        return Trade(quantity, self.price)
 
     def __eq__(self, value: object) -> bool:
         return (

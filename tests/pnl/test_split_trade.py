@@ -1,9 +1,6 @@
 """Tests for scaled orders"""
 
-from jetblack_finance.pnl.split_trade import SplitTrade
-
-
-from .utils import Trade
+from jetblack_finance.pnl import SplitTrade, Trade
 
 
 def test_split_long():

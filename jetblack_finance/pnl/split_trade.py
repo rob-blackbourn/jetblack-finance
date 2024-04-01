@@ -2,14 +2,40 @@
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from decimal import Decimal
-from typing import Literal, Tuple, Optional
+from typing import Literal, Tuple, Optional, Protocol
 
 
 from .itrade import ITrade
 
 
-class SplitTrade:
+class ISplitTrade(Protocol):
+
+    @property
+    @abstractmethod
+    def quantity(self) -> Decimal:
+        ...
+
+    @property
+    @abstractmethod
+    def price(self) -> Decimal:
+        ...
+
+    @property
+    def trade(self) -> ITrade:
+        ...
+
+    @abstractmethod
+    def split(self, quantity: Decimal) -> Tuple[ISplitTrade, ISplitTrade]:
+        ...
+
+    @abstractmethod
+    def __neg__(self) -> ISplitTrade:
+        ...
+
+
+class SplitTrade(ISplitTrade):
 
     def __init__(
             self,
@@ -34,7 +60,7 @@ class SplitTrade:
         return self._trade.price
 
     @property
-    def order(self) -> ITrade:
+    def trade(self) -> ITrade:
         return self._trade
 
     def split(self, quantity: Decimal) -> Tuple[SplitTrade, SplitTrade]:

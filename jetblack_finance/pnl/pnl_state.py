@@ -4,9 +4,9 @@ from decimal import Decimal
 from typing import Sequence
 
 from .matched_trade import MatchedTrade
-from .split_trade import SplitTrade
+from .split_trade import ISplitTrade
 
-Unmatched = Sequence[SplitTrade]
+Unmatched = Sequence[ISplitTrade]
 Matched = Sequence[MatchedTrade]
 
 

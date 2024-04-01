@@ -49,7 +49,7 @@ CREATE TABLE position
     position_id             INT             NOT NULL    AUTO_INCREMENT,
     instrument_id           INT             NOT NULL,
     book_id                 INT             NOT NULL,
-    last_trade_id           INT             NOT NULL,
+    split_trade_id          INT             NOT NULL,
     quantity                NUMERIC(18, 2)  NOT NULL,
     cost                    NUMERIC(18, 2)  NOT NULL,
     realized                NUMERIC(18, 2)  NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE position
     UNIQUE (instrument_id, book_id),
     FOREIGN KEY (instrument_id) REFERENCES instrument(instrument_id),
     FOREIGN KEY (book_id) REFERENCES book(book_id),
-    FOREIGN KEY (last_trade_id) REFERENCES trade(trade_id)
+    FOREIGN KEY (split_trade_id) REFERENCES split_trade(split_trade_id)
 ) WITH SYSTEM VERSIONING;
 """)
 

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from decimal import Decimal
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from .itrade import ITrade
-from .split_trade import SplitTrade
+from .split_trade import SplitTrade, ISplitTrade
 from .pnl_strip import PnlStrip
 from .pnl_state import PnlState, Matched, Unmatched
 from .algorithm import add_scaled_trade
@@ -21,7 +21,8 @@ class ABCPnl(PnlState):
         cost=Decimal(0),
         realized=Decimal(0),
         unmatched: Optional[Unmatched] = None,
-        matched: Optional[Matched] = None
+        matched: Optional[Matched] = None,
+        factory: Optional[Callable[[ITrade], ISplitTrade]] = None
     ) -> None:
         super().__init__(
             quantity,
@@ -30,12 +31,14 @@ class ABCPnl(PnlState):
             unmatched or [],
             matched or [],
         )
+        self._factory = factory or SplitTrade
 
     def __add__(self, other: Any) -> ABCPnl:
         assert isinstance(other, ITrade)
+        split_trade = self._factory(other)
         state = add_scaled_trade(
             self,
-            SplitTrade(other),
+            split_trade,
             self._push_unmatched,
             self._pop_unmatched,
         )
@@ -43,9 +46,10 @@ class ABCPnl(PnlState):
 
     def __sub__(self, other: Any) -> ABCPnl:
         assert isinstance(other, ITrade)
+        split_trade = self._factory(other)
         state = add_scaled_trade(
             self,
-            -SplitTrade(other),
+            -split_trade,
             self._push_unmatched,
             self._pop_unmatched,
         )
@@ -59,11 +63,11 @@ class ABCPnl(PnlState):
         ...
 
     @abstractmethod
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitTrade, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ISplitTrade, Unmatched]:
         ...
 
     @abstractmethod
-    def _push_unmatched(self, order: SplitTrade, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: ISplitTrade, unmatched: Unmatched) -> Unmatched:
         ...
 
     @property
@@ -99,10 +103,10 @@ class FifoPnl(ABCPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitTrade, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ISplitTrade, Unmatched]:
         return unmatched[0], unmatched[1:]
 
-    def _push_unmatched(self, order: SplitTrade, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: ISplitTrade, unmatched: Unmatched) -> Unmatched:
         return [order] + list(unmatched)
 
 
@@ -120,10 +124,10 @@ class LifoPnl(ABCPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitTrade, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ISplitTrade, Unmatched]:
         return unmatched[-1], unmatched[:-1]
 
-    def _push_unmatched(self, order: SplitTrade, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: ISplitTrade, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
 
 
@@ -141,7 +145,7 @@ class BestPricePnl(ABCPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitTrade, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ISplitTrade, Unmatched]:
         orders = sorted(unmatched, key=lambda x: x.price)
         order, orders = (
             (orders[0], orders[1:])
@@ -150,7 +154,7 @@ class BestPricePnl(ABCPnl):
         )
         return order, orders
 
-    def _push_unmatched(self, order: SplitTrade, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: ISplitTrade, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
 
 
@@ -168,7 +172,7 @@ class WorstPricePnl(ABCPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitTrade, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ISplitTrade, Unmatched]:
         orders = sorted(unmatched, key=lambda x: x.price)
         order, orders = (
             (orders[-1], orders[:-1])
@@ -177,5 +181,5 @@ class WorstPricePnl(ABCPnl):
         )
         return order, orders
 
-    def _push_unmatched(self, order: SplitTrade, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: ISplitTrade, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
