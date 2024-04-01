@@ -23,36 +23,31 @@ def test_long_to_short_with_splits_best_price():
     assert pnl.realized == 0
     assert pnl.avg_cost == 0
 
-    buy_6_at_100 = Trade(6, 100)
-    pnl = pnl + buy_6_at_100
+    pnl = pnl + Trade(6, 100)  # Buy 6 @ 100
     assert pnl.quantity == 6
     assert pnl.cost == -600
     assert pnl.realized == 0
     assert pnl.avg_cost == 100
 
-    buy_6_at_106 = Trade(6, 106)
-    pnl = pnl + buy_6_at_106
+    pnl = pnl + Trade(6, 106)  # Buy 6 @ 106
     assert pnl.quantity == 12
     assert pnl.cost == -1236
     assert pnl.realized == 0
     assert pnl.avg_cost == 103
 
-    buy_6_at_103 = Trade(6, 103)
-    pnl = pnl + buy_6_at_103
+    pnl = pnl + Trade(6, 103)  # Buy 6 @ 103
     assert pnl.quantity == 18
     assert pnl.cost == -1854
     assert pnl.realized == 0
     assert pnl.avg_cost == 103
 
-    sell_9_at_105 = Trade(-9, 105)
-    pnl = pnl + sell_9_at_105
+    pnl = pnl + Trade(-9, 105)  # Sell 9 @ 105
     assert pnl.quantity == 9
     assert pnl.cost == -945
     assert pnl.realized == 36
     assert pnl.avg_cost == 105
 
-    sell_9_at_107 = Trade(-9, 107)
-    pnl = pnl + sell_9_at_107
+    pnl = pnl + Trade(-9, 107)  # Sell 9 @ 107
     assert pnl.quantity == 0
     assert pnl.cost == 0
     assert pnl.realized == 54
@@ -110,29 +105,25 @@ def test_long_to_short_with_splits_worst_price():
     assert pnl.realized == 0
     assert pnl.avg_cost == 0
 
-    buy_6_at_100 = Trade(6, 100)
-    pnl = pnl + buy_6_at_100
+    pnl = pnl + Trade(6, 100)  # Buy 6 at 100
     assert pnl.quantity == 6
     assert pnl.cost == -600
     assert pnl.realized == 0
     assert pnl.avg_cost == 100
 
-    buy_6_at_106 = Trade(6, 106)
-    pnl = pnl + buy_6_at_106
+    pnl = pnl + Trade(6, 106)  # Buy 6 @ 106
     assert pnl.quantity == 12
     assert pnl.cost == -1236
     assert pnl.realized == 0
     assert pnl.avg_cost == 103
 
-    buy_6_at_103 = Trade(6, 103)
-    pnl = pnl + buy_6_at_103
+    pnl = pnl + Trade(6, 103)  # Buy 6 @ 103
     assert pnl.quantity == 18
     assert pnl.cost == -1854
     assert pnl.realized == 0
     assert pnl.avg_cost == 103
 
-    sell_9_at_105 = Trade(-9, 105)
-    pnl = pnl + sell_9_at_105
+    pnl = pnl + Trade(-9, 105)  # Sell 9 @ 105
     assert pnl.quantity == 9
     assert pnl.cost == -909
     assert pnl.realized == 0
@@ -149,29 +140,25 @@ def test_long_to_short_with_splits_fifo():
     assert pnl.realized == 0
     assert pnl.avg_cost == 0
 
-    buy_6_at_100 = Trade(6, 100)
-    pnl = pnl + buy_6_at_100
+    pnl = pnl + Trade(6, 100)  # Buy 6 @ 100
     assert pnl.quantity == 6
     assert pnl.cost == -600
     assert pnl.realized == 0
     assert pnl.avg_cost == 100
 
-    buy_6_at_106 = Trade(6, 106)
-    pnl = pnl + buy_6_at_106
+    pnl = pnl + Trade(6, 106)  # Buy 6 @ 106
     assert pnl.quantity == 12
     assert pnl.cost == -1236
     assert pnl.realized == 0
     assert pnl.avg_cost == 103
 
-    buy_6_at_103 = Trade(6, 103)
-    pnl = pnl + buy_6_at_103
+    pnl = pnl + Trade(6, 103)  # Buy 6 @ 103
     assert pnl.quantity == 18
     assert pnl.cost == -1854
     assert pnl.realized == 0
     assert pnl.avg_cost == 103
 
-    sell_9_at_105 = Trade(-9, 105)
-    pnl = pnl + sell_9_at_105
+    pnl = pnl + Trade(-9, 105)  # Sell 9 @ 105
     assert pnl.quantity == 9
     assert pnl.cost == -936
     assert pnl.realized == 27
@@ -188,29 +175,25 @@ def test_long_to_short_with_splits_lifo():
     assert pnl.realized == 0
     assert pnl.avg_cost == 0
 
-    buy_6_at_100 = Trade(6, 100)
-    pnl = pnl + buy_6_at_100
+    pnl = pnl + Trade(6, 100)  # Buy 6 @ 100
     assert pnl.quantity == 6
     assert pnl.cost == -600
     assert pnl.realized == 0
     assert pnl.avg_cost == 100
 
-    buy_6_at_106 = Trade(6, 106)
-    pnl = pnl + buy_6_at_106
+    pnl = pnl + Trade(6, 106)  # Buy 6 @ 106
     assert pnl.quantity == 12
     assert pnl.cost == -1236
     assert pnl.realized == 0
     assert pnl.avg_cost == 103
 
-    buy_6_at_103 = Trade(6, 103)
-    pnl = pnl + buy_6_at_103
+    pnl = pnl + Trade(6, 103)  # Buy 6 @ 103
     assert pnl.quantity == 18
     assert pnl.cost == -1854
     assert pnl.realized == 0
     assert pnl.avg_cost == 103
 
-    sell_9_at_105 = Trade(-9, 105)
-    pnl = pnl + sell_9_at_105
+    pnl = pnl + Trade(-9, 105)  # Sell 9 @ 105
     assert pnl.quantity == 9
     assert pnl.cost == -918
     assert pnl.realized == 9
