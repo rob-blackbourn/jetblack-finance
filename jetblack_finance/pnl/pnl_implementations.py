@@ -6,14 +6,14 @@ from abc import abstractmethod
 from decimal import Decimal
 from typing import Any, Optional, Union
 
-from .iorder import IOrder
-from .split_order import SplitOrder
-from .order_pnl_strip import OrderPnlStrip
-from .order_pnl_state import OrderPnlState, Matched, Unmatched
-from .algorithm import add_scaled_order
+from .itrade import ITrade
+from .split_trade import SplitTrade
+from .pnl_strip import PnlStrip
+from .pnl_state import PnlState, Matched, Unmatched
+from .algorithm import add_scaled_trade
 
 
-class OrderPnl(OrderPnlState):
+class ABCPnl(PnlState):
 
     def __init__(
         self,
@@ -31,21 +31,21 @@ class OrderPnl(OrderPnlState):
             matched or [],
         )
 
-    def __add__(self, other: Any) -> OrderPnl:
-        assert isinstance(other, IOrder)
-        state = add_scaled_order(
+    def __add__(self, other: Any) -> ABCPnl:
+        assert isinstance(other, ITrade)
+        state = add_scaled_trade(
             self,
-            SplitOrder(other),
+            SplitTrade(other),
             self._push_unmatched,
             self._pop_unmatched,
         )
         return self._create(state)
 
-    def __sub__(self, other: Any) -> OrderPnl:
-        assert isinstance(other, IOrder)
-        state = add_scaled_order(
+    def __sub__(self, other: Any) -> ABCPnl:
+        assert isinstance(other, ITrade)
+        state = add_scaled_trade(
             self,
-            -SplitOrder(other),
+            -SplitTrade(other),
             self._push_unmatched,
             self._pop_unmatched,
         )
@@ -54,16 +54,16 @@ class OrderPnl(OrderPnlState):
     @abstractmethod
     def _create(
         self,
-        state: OrderPnlState
-    ) -> OrderPnl:
+        state: PnlState
+    ) -> ABCPnl:
         ...
 
     @abstractmethod
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitOrder, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitTrade, Unmatched]:
         ...
 
     @abstractmethod
-    def _push_unmatched(self, order: SplitOrder, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: SplitTrade, unmatched: Unmatched) -> Unmatched:
         ...
 
     @property
@@ -75,8 +75,8 @@ class OrderPnl(OrderPnlState):
     def unrealized(self, price: Union[Decimal, int]) -> Decimal:
         return self.quantity * price + self.cost
 
-    def strip(self, price: Union[Decimal, int]) -> OrderPnlStrip:
-        return OrderPnlStrip(
+    def strip(self, price: Union[Decimal, int]) -> PnlStrip:
+        return PnlStrip(
             self.quantity,
             self.avg_cost,
             price,
@@ -85,13 +85,13 @@ class OrderPnl(OrderPnlState):
         )
 
 
-class FifoOrderPnl(OrderPnl):
+class FifoPnl(ABCPnl):
 
     def _create(
         self,
-        state: OrderPnlState
-    ) -> FifoOrderPnl:
-        return FifoOrderPnl(
+        state: PnlState
+    ) -> FifoPnl:
+        return FifoPnl(
             state.quantity,
             state.cost,
             state.realized,
@@ -99,20 +99,20 @@ class FifoOrderPnl(OrderPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitOrder, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitTrade, Unmatched]:
         return unmatched[0], unmatched[1:]
 
-    def _push_unmatched(self, order: SplitOrder, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: SplitTrade, unmatched: Unmatched) -> Unmatched:
         return [order] + list(unmatched)
 
 
-class LifoOrderPnl(OrderPnl):
+class LifoPnl(ABCPnl):
 
     def _create(
         self,
-        state: OrderPnlState
-    ) -> LifoOrderPnl:
-        return LifoOrderPnl(
+        state: PnlState
+    ) -> LifoPnl:
+        return LifoPnl(
             state.quantity,
             state.cost,
             state.realized,
@@ -120,20 +120,20 @@ class LifoOrderPnl(OrderPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitOrder, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitTrade, Unmatched]:
         return unmatched[-1], unmatched[:-1]
 
-    def _push_unmatched(self, order: SplitOrder, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: SplitTrade, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
 
 
-class BestPriceOrderPnl(OrderPnl):
+class BestPricePnl(ABCPnl):
 
     def _create(
         self,
-        state: OrderPnlState
-    ) -> BestPriceOrderPnl:
-        return BestPriceOrderPnl(
+        state: PnlState
+    ) -> BestPricePnl:
+        return BestPricePnl(
             state.quantity,
             state.cost,
             state.realized,
@@ -141,7 +141,7 @@ class BestPriceOrderPnl(OrderPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitOrder, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitTrade, Unmatched]:
         orders = sorted(unmatched, key=lambda x: x.price)
         order, orders = (
             (orders[0], orders[1:])
@@ -150,17 +150,17 @@ class BestPriceOrderPnl(OrderPnl):
         )
         return order, orders
 
-    def _push_unmatched(self, order: SplitOrder, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: SplitTrade, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
 
 
-class WorstPriceOrderPnl(OrderPnl):
+class WorstPricePnl(ABCPnl):
 
     def _create(
         self,
-        state: OrderPnlState
-    ) -> WorstPriceOrderPnl:
-        return WorstPriceOrderPnl(
+        state: PnlState
+    ) -> WorstPricePnl:
+        return WorstPricePnl(
             state.quantity,
             state.cost,
             state.realized,
@@ -168,7 +168,7 @@ class WorstPriceOrderPnl(OrderPnl):
             state.matched
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitOrder, Unmatched]:
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[SplitTrade, Unmatched]:
         orders = sorted(unmatched, key=lambda x: x.price)
         order, orders = (
             (orders[-1], orders[:-1])
@@ -177,5 +177,5 @@ class WorstPriceOrderPnl(OrderPnl):
         )
         return order, orders
 
-    def _push_unmatched(self, order: SplitOrder, unmatched: Unmatched) -> Unmatched:
+    def _push_unmatched(self, order: SplitTrade, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]

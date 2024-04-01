@@ -3,14 +3,14 @@
 from decimal import Decimal
 from typing import Sequence
 
-from .matched_order import MatchedOrder
-from .split_order import SplitOrder
+from .matched_trade import MatchedTrade
+from .split_trade import SplitTrade
 
-Unmatched = Sequence[SplitOrder]
-Matched = Sequence[MatchedOrder]
+Unmatched = Sequence[SplitTrade]
+Matched = Sequence[MatchedTrade]
 
 
-class OrderPnlState:
+class PnlState:
 
     def __init__(
             self,
