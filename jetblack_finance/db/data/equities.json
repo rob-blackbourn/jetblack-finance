@@ -1,0 +1,14 @@
+[
+    {
+        "name": "IBM",
+        "ccy": "USD"        
+    },
+    {
+        "name": "AAPL",
+        "ccy": "USD"        
+    },
+    {
+        "name": "MSFT",
+        "ccy": "USD"        
+    }
+]
