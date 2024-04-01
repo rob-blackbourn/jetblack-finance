@@ -37,7 +37,6 @@ match.
 
 from typing import Callable, Optional, Sequence, Tuple
 
-from .itrade import ITrade
 from .matched_trade import MatchedTrade
 from .split_trade import SplitTrade
 from .pnl_state import PnlState, Unmatched
