@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Literal, Tuple, Optional, Protocol
 
 
-from .itrade import ITrade
+from .trade import ITrade
 
 
 class ISplitTrade(Protocol):
@@ -22,16 +22,8 @@ class ISplitTrade(Protocol):
     def price(self) -> Decimal:
         ...
 
-    @property
-    def trade(self) -> ITrade:
-        ...
-
     @abstractmethod
     def split(self, quantity: Decimal) -> Tuple[ISplitTrade, ISplitTrade]:
-        ...
-
-    @abstractmethod
-    def __neg__(self) -> ISplitTrade:
         ...
 
 
@@ -59,23 +51,12 @@ class SplitTrade(ISplitTrade):
     def price(self) -> Decimal:
         return self._trade.price
 
-    @property
-    def trade(self) -> ITrade:
-        return self._trade
-
     def split(self, quantity: Decimal) -> Tuple[SplitTrade, SplitTrade]:
         assert abs(self.quantity) >= abs(quantity)
         unused = self.quantity - quantity
         matched = SplitTrade(self._trade, self._used + unused, self._sign)
         unmatched = SplitTrade(self._trade, self._used + quantity, self._sign)
         return matched, unmatched
-
-    def __neg__(self) -> SplitTrade:
-        return SplitTrade(
-            self._trade,
-            self._used,
-            1 if self._sign == -1 else -1
-        )
 
     def __eq__(self, value: object) -> bool:
         return (

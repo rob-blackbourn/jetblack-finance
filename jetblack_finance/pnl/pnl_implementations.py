@@ -6,7 +6,7 @@ from abc import abstractmethod
 from decimal import Decimal
 from typing import Any, Callable, Optional, Union
 
-from .itrade import ITrade
+from .trade import ITrade
 from .split_trade import SplitTrade, ISplitTrade
 from .pnl_strip import PnlStrip
 from .pnl_state import PnlState, Matched, Unmatched

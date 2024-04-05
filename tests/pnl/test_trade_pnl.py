@@ -54,47 +54,6 @@ def test_long_to_short_with_splits_best_price():
     assert pnl.avg_cost == 0
 
 
-def test_long_to_short_with_splits_best_price_with_sub():
-    """long to short, splits, best price"""
-
-    pnl = BestPricePnl()
-
-    assert pnl.quantity == 0
-    assert pnl.cost == 0
-    assert pnl.realized == 0
-    assert pnl.avg_cost == 0
-
-    pnl = pnl + Trade(6, 100)
-    assert pnl.quantity == 6
-    assert pnl.cost == -600
-    assert pnl.realized == 0
-    assert pnl.avg_cost == 100
-
-    pnl = pnl + Trade(6, 106)
-    assert pnl.quantity == 12
-    assert pnl.cost == -1236
-    assert pnl.realized == 0
-    assert pnl.avg_cost == 103
-
-    pnl = pnl + Trade(6, 103)
-    assert pnl.quantity == 18
-    assert pnl.cost == -1854
-    assert pnl.realized == 0
-    assert pnl.avg_cost == 103
-
-    pnl = pnl - Trade(9, 105)
-    assert pnl.quantity == 9
-    assert pnl.cost == -945
-    assert pnl.realized == 36
-    assert pnl.avg_cost == 105
-
-    pnl = pnl - Trade(9, 107)
-    assert pnl.quantity == 0
-    assert pnl.cost == 0
-    assert pnl.realized == 54
-    assert pnl.avg_cost == 0
-
-
 def test_long_to_short_with_splits_worst_price():
     """long to short, splits, worst price"""
 
