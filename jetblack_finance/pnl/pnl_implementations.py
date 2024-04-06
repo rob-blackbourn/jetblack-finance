@@ -44,17 +44,6 @@ class ABCPnl(PnlState):
         )
         return self._create(state)
 
-    def __sub__(self, other: Any) -> ABCPnl:
-        assert isinstance(other, ITrade)
-        split_trade = self._factory(other)
-        state = add_scaled_trade(
-            self,
-            -split_trade,
-            self._push_unmatched,
-            self._pop_unmatched,
-        )
-        return self._create(state)
-
     @abstractmethod
     def _create(
         self,
