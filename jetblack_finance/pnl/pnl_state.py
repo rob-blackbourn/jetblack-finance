@@ -1,13 +1,9 @@
 """A class representing the state of the P&L calculation"""
 
 from decimal import Decimal
-from typing import Sequence
+from typing import Sequence, Tuple
 
-from .matched_trade import MatchedTrade
 from .split_trade import ISplitTrade
-
-Unmatched = Sequence[ISplitTrade]
-Matched = Sequence[MatchedTrade]
 
 
 class PnlState:
@@ -17,8 +13,8 @@ class PnlState:
             quantity: Decimal,
             cost: Decimal,
             realized: Decimal,
-            unmatched: Unmatched,
-            matched: Matched
+            unmatched: Sequence[ISplitTrade],
+            matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
     ) -> None:
         self._quantity = quantity
         self._cost = cost
@@ -39,11 +35,11 @@ class PnlState:
         return self._realized
 
     @property
-    def unmatched(self) -> Unmatched:
+    def unmatched(self) -> Sequence[ISplitTrade]:
         return self._unmatched
 
     @property
-    def matched(self) -> Matched:
+    def matched(self) -> Sequence[Tuple[ISplitTrade, ISplitTrade]]:
         return self._matched
 
     def __repr__(self) -> str:

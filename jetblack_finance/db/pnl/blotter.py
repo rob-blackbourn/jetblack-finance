@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional, cast
+from typing import Any, Optional, Sequence, Tuple, cast
 
 from mariadb.connections import Connection
 from mariadb.cursors import Cursor
@@ -13,6 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from jetblack_finance.pnl import ITrade, ISplitTrade
+from jetblack_finance.pnl.algorithm import add_split_trade
 from jetblack_finance.pnl.pnl_state import PnlState
 from jetblack_finance.pnl.pnl_implementations import ABCPnl, Matched, Unmatched
 
@@ -45,12 +46,12 @@ class FifoPnl(PnlState):
 
     def __init__(
         self,
+        session: Session,
         quantity=Decimal(0),
         cost=Decimal(0),
         realized=Decimal(0),
-        unmatched: Optional[Unmatched] = None,
-        matched: Optional[Matched] = None,
-        session: Session
+        unmatched: Sequence[ISplitTrade] = (),
+        matched: Sequence[Tuple[ISplitTrade, ISplitTrade]] = (),
     ) -> None:
         super().__init__(
             quantity,
@@ -59,11 +60,11 @@ class FifoPnl(PnlState):
             unmatched or [],
             matched or [],
         )
-        self._factory = factory or SplitTrade
+        self._session = session
 
-    def __add__(self, other: Any) -> ABCPnl:
-        assert isinstance(other, ITrade)
-        split_trade = self._factory(other)
+    def __add__(self, trade: Any) -> FifoPnl:
+        assert isinstance(trade, ITrade)
+        split_trade = SplitTrade(trade=trade)
         state = add_split_trade(
             self,
             split_trade,
@@ -71,22 +72,19 @@ class FifoPnl(PnlState):
             self._pop_unmatched,
             self._push_matched
         )
-        return self._create(state)
-
-    def _create(
-        self,
-        state: PnlState
-    ) -> FifoPnl:
         return FifoPnl(
+            self._session,
             state.quantity,
             state.cost,
             state.realized,
             state.unmatched,
             state.matched,
-            lambda trade: SplitTrade(trade=trade)
         )
 
-    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ISplitTrade, Unmatched]:
+    def _pop_unmatched(
+            self,
+            unmatched: Sequence[ISplitTrade]
+    ) -> Tuple[ISplitTrade, Sequence[ISplitTrade]]:
         return unmatched[0], unmatched[1:]
 
     def _push_unmatched(self, split_trade: ISplitTrade, unmatched: Unmatched) -> Unmatched:

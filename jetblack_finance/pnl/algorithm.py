@@ -38,7 +38,7 @@ match.
 from typing import Callable, Optional, Sequence, Tuple
 
 from .split_trade import ISplitTrade
-from .pnl_state import PnlState, Matched, Unmatched
+from .pnl_state import PnlState
 
 
 def _extend_position(
@@ -66,12 +66,26 @@ def _extend_position(
     )
 
 
+PushUnmatched = Callable[
+    [ISplitTrade, Sequence[ISplitTrade]],
+    Sequence[ISplitTrade]
+]
+PopUnmatched = Callable[
+    [Sequence[ISplitTrade]],
+    Tuple[ISplitTrade, Sequence[ISplitTrade]]
+]
+PushMatched = Callable[
+    [ISplitTrade, ISplitTrade, Sequence[Tuple[ISplitTrade, ISplitTrade]]],
+    Sequence[Tuple[ISplitTrade, ISplitTrade]]
+]
+
+
 def _find_match(
         trade: ISplitTrade,
         unmatched: Sequence[ISplitTrade],
-        push_unmatched: Callable[[ISplitTrade, Unmatched], Unmatched],
-        pop_unmatched: Callable[[Unmatched], tuple[ISplitTrade, Unmatched]]
-) -> Tuple[Unmatched, ISplitTrade, ISplitTrade, Optional[ISplitTrade]]:
+        push_unmatched: PushUnmatched,
+        pop_unmatched: PopUnmatched
+) -> Tuple[Sequence[ISplitTrade], ISplitTrade, ISplitTrade, Optional[ISplitTrade]]:
     """Find a match for the trade from the unmatched trades.
 
     Args:
@@ -113,9 +127,9 @@ def _find_match(
 def _match(
         pnl: PnlState,
         trade: ISplitTrade,
-        push_unmatched: Callable[[ISplitTrade, Unmatched], Unmatched],
-        pop_unmatched: Callable[[Unmatched], tuple[ISplitTrade, Unmatched]],
-        push_matched: Callable[[ISplitTrade, ISplitTrade, Matched], Matched],
+        push_unmatched: PushUnmatched,
+        pop_unmatched: PopUnmatched,
+        push_matched: PushMatched,
 ) -> Tuple[Optional[ISplitTrade], PnlState]:
     """Match the trade with one from the unmatched trades.
 
@@ -160,9 +174,9 @@ def _match(
 def _reduce_position(
         pnl: PnlState,
         trade: Optional[ISplitTrade],
-        push_unmatched: Callable[[ISplitTrade, Unmatched], Unmatched],
-        pop_unmatched: Callable[[Unmatched], tuple[ISplitTrade, Unmatched]],
-        push_matched: Callable[[ISplitTrade, ISplitTrade, Matched], Matched],
+        push_unmatched: PushUnmatched,
+        pop_unmatched: PopUnmatched,
+        push_matched: PushMatched,
 ) -> PnlState:
     """Reduce a long position with a sell, or a short position with a buy.
 
@@ -203,9 +217,9 @@ def _reduce_position(
 def add_split_trade(
         pnl: PnlState,
         trade: ISplitTrade,
-        push_unmatched: Callable[[ISplitTrade, Unmatched], Unmatched],
-        pop_unmatched: Callable[[Unmatched], tuple[ISplitTrade, Unmatched]],
-        push_matched: Callable[[ISplitTrade, ISplitTrade, Matched], Matched],
+        push_unmatched: PushUnmatched,
+        pop_unmatched: PopUnmatched,
+        push_matched: PushMatched,
 ) -> PnlState:
     """Add a splitable trade creating a new p/l state.
 
