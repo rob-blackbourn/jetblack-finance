@@ -1,192 +1,138 @@
 """A trade blotter"""
 
+from __future__ import annotations
+
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from mariadb.connections import Connection
 from mariadb.cursors import Cursor
 
-from jetblack_finance.pnl.pnl_implementations import ABCPnl
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-from ...pnl import FifoPnl
-from ...pnl.split_trade import SplitTrade
-
-from .trade import Trade
-
-
-def _find_instrument(cursor: Cursor, name: str) -> int:
-    cursor.execute(
-        "SELECT instrument_id FROM trading.instrument WHERE name = ?",
-        (name,)
-    )
-    row = cursor.fetchone()
-    assert row is not None, "instrument should exist"
-    return row[0]
+from jetblack_finance.pnl import ITrade, ISplitTrade
+from jetblack_finance.pnl.pnl_state import PnlState
+from jetblack_finance.pnl.pnl_implementations import ABCPnl, Matched, Unmatched
 
 
-def _find_book(cursor: Cursor, name: str) -> int:
-    cursor.execute(
-        "SELECT book_id FROM trading.book WHERE name = ?",
-        (name,)
-    )
-    row = cursor.fetchone()
-    assert row is not None, "book should exist"
-    return row[0]
+from jetblack_finance.db.builder.create_sqlalchemy import (
+    Base,
+    Currency,
+    Instrument,
+    Book,
+    Counterparty,
+    Trade,
+    SplitTrade,
+    MatchedTrade,
+    UnmatchedTrade,
+    Position
+)
 
 
-def _find_counterparty(cursor: Cursor, name: str) -> int:
-    cursor.execute(
-        "SELECT counterparty_id FROM trading.counterparty WHERE name = ?",
-        (name,)
-    )
-    row = cursor.fetchone()
-    assert row is not None, "counterparty should exist"
-    return row[0]
+def make_split_trade_factory(session: Session):
+
+    def split_trade_factory(trade: ITrade) -> ISplitTrade:
+        split_trade = SplitTrade(trade=trade, used=Decimal(0))
+        session.add(split_trade)
+        return split_trade
+
+    return split_trade_factory
 
 
-def _find_position(
-        cursor: Cursor,
-        instrument_id: int,
-        book_id: int
-) -> Optional[Any]:
-    sql = """
-SELECT
-FROM
-    trading.position
-WHERE
-    instrument_id = ?
-AND
-    book_id = ?
-;"""
-    args = (instrument_id, book_id)
-    cursor.execute(sql, args)
-    row = cursor.fetchone()
-    return row
+class FifoPnl(PnlState):
+
+    def __init__(
+        self,
+        quantity=Decimal(0),
+        cost=Decimal(0),
+        realized=Decimal(0),
+        unmatched: Optional[Unmatched] = None,
+        matched: Optional[Matched] = None,
+        session: Session
+    ) -> None:
+        super().__init__(
+            quantity,
+            cost,
+            realized,
+            unmatched or [],
+            matched or [],
+        )
+        self._factory = factory or SplitTrade
+
+    def __add__(self, other: Any) -> ABCPnl:
+        assert isinstance(other, ITrade)
+        split_trade = self._factory(other)
+        state = add_split_trade(
+            self,
+            split_trade,
+            self._push_unmatched,
+            self._pop_unmatched,
+            self._push_matched
+        )
+        return self._create(state)
+
+    def _create(
+        self,
+        state: PnlState
+    ) -> FifoPnl:
+        return FifoPnl(
+            state.quantity,
+            state.cost,
+            state.realized,
+            state.unmatched,
+            state.matched,
+            lambda trade: SplitTrade(trade=trade)
+        )
+
+    def _pop_unmatched(self, unmatched: Unmatched) -> tuple[ISplitTrade, Unmatched]:
+        return unmatched[0], unmatched[1:]
+
+    def _push_unmatched(self, split_trade: ISplitTrade, unmatched: Unmatched) -> Unmatched:
+        UnmatchedTrade(split_trade=split_trade)
+        return [split_trade] + list(unmatched)
+
+    def _push_matched(self, opening: ISplitTrade, closing: ISplitTrade, matched: Matched) -> Matched:
+        return list(matched) + [MatchedTrade(opening, closing)]
 
 
-def _insert_trade(
-        cursor: Cursor,
-        instrument_id: int,
-        quantity: Decimal,
-        price: Decimal,
-        trade_date: date,
-        transaction_time: datetime,
-        book_id: int,
-        counterparty_id: int
-) -> Trade:
-    sql = """
-INSERT INTO trading.trade(
-    instrument_id,
-    quantity,
-    price,
-    trade_date,
-    transaction_time,
-    book_id,
-    counterparty_id
-) VALUES (
-    ?,
-    ?,
-    ?,
-    ?,
-    ?,
-    ?,
-    ?
-)"""
-    args = (
-        instrument_id,
-        quantity,
-        price,
-        trade_date,
-        transaction_time,
-        book_id,
-        counterparty_id
+def main():
+    engine = create_engine("sqlite://", echo=True)
+    Base.metadata.create_all(engine)
 
-    )
-    cursor.execute(sql, args)
-    return Trade(
-        cursor.lastrowid,
-        instrument_id,
-        quantity,
-        price,
-        trade_date,
-        transaction_time,
-        book_id,
-        counterparty_id
-    )
+    with Session(engine) as session:
+        pnl = FifoPnl(factory=make_split_trade_factory(session))
+
+        usd = Currency(
+            ccy='USD',
+            name='US Dollar',
+            minor_unit=2,
+            numeric_code=840
+        )
+        ibm = Instrument(name='IBM Inc', ccy=usd)
+        tech_stocks = Book(name='tech stocks')
+        fatbank = Counterparty(name='FatBank')
+        session.add_all([usd, ibm, tech_stocks, fatbank])
+        session.commit()
+
+        t1 = Trade(
+            instrument=ibm,
+            quantity=Decimal(100),
+            price=Decimal(189.14),
+            trade_date=date(2024, 4, 7),
+            transaction_time=datetime(2024, 4, 7, 10, 17),
+            ccy=usd,
+            book=tech_stocks,
+            counterparty=fatbank
+        )
+        session.add(t1)
+
+        pnl2 = pnl + t1
+        session.commit()
+
+        print(pnl2)
 
 
-def _insert_split_trade(
-        cursor: Cursor,
-        trade: Trade,
-        used: Decimal
-) -> SplitTrade:
-    sql = """
-INSERT INTO trading.split_trade(trade_id, used)
-VALUES (?, ?)
-;"""
-    args = (trade.trade_id, used)
-    cursor.execute(sql, args)
-
-    return SplitTrade(trade, used)
-
-
-def insert_position(
-        cursor: Cursor,
-        split_trade: SplitTrade,
-        pnl: ABCPnl,
-) -> None:
-    sql = """
-INSERT INTO trading.position
-(
-    instrument_id,
-    book_id,
-    split_trade_id,
-    quantity,
-    cost,
-    realized
-) VALUES (
-    ?,
-    ?,
-    ?,
-    ?,
-    ?,
-    ?
-)"""
-    args(
-        split_trade,
-        book_id,
-    )
-
-
-def book_trade(
-        conn: Connection,
-        symbol: str,
-        quantity: Decimal,
-        price: Decimal,
-        trade_date: date,
-        transaction_time: datetime,
-        book: str,
-        counteryparty: str
-):
-    with conn.cursor() as cur:
-        instrument_id = _find_instrument(cur, symbol)
-        book_id = _find_book(cur, book)
-        counterparty_id = _find_counterparty(cur, counteryparty)
-
-        position_row = _find_position(cur, instrument_id, book_id)
-
-        if position_row is None:
-            trade = _insert_trade(
-                cur,
-                instrument_id,
-                quantity,
-                price,
-                trade_date,
-                transaction_time,
-                book_id,
-                counterparty_id
-            )
-            pnl: ABCPnl = FifoPnl()
-            pnl = pnl + trade
-            _insert_position(cursor, pnl)
+if __name__ == '__main__':
+    main()

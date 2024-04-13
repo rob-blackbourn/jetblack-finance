@@ -245,12 +245,12 @@ def test_long_sell_fifo_through_flat():
     assert pnl.cost == 102
     assert pnl.realized == 1
     assert list(pnl.unmatched) == [
-        SplitTrade(Trade(-2, 102), -1, 1)
+        SplitTrade(Trade(-2, 102), -1)
     ]
     assert pnl.matched == [
         MatchedTrade(
-            SplitTrade(Trade(1, 101), 0, 1),
-            SplitTrade(Trade(-2, 102), -1, 1)
+            SplitTrade(Trade(1, 101), 0),
+            SplitTrade(Trade(-2, 102), -1)
         )
     ]
 
@@ -265,12 +265,12 @@ def test_short_buy_fifo_through_flat():
     assert pnl.cost == -101
     assert pnl.realized == 1
     assert list(pnl.unmatched) == [
-        SplitTrade(Trade(2, 101), 1, 1)
+        SplitTrade(Trade(2, 101), 1)
     ]
     assert pnl.matched == [
         MatchedTrade(
-            SplitTrade(Trade(-1, 102), 0, 1),
-            SplitTrade(Trade(2, 101), 1, 1)
+            SplitTrade(Trade(-1, 102), 0),
+            SplitTrade(Trade(2, 101), 1)
         )
     ]
 
@@ -291,12 +291,12 @@ def test_one_buy_many_sells_fifo():
     assert len(pnl.unmatched) == 0
     assert pnl.matched == [
         MatchedTrade(
-            SplitTrade(Trade(10, 101), 5, 1),
-            SplitTrade(Trade(-5, 102), 0, 1)
+            SplitTrade(Trade(10, 101), 5),
+            SplitTrade(Trade(-5, 102), 0)
         ),
         MatchedTrade(
-            SplitTrade(Trade(10, 101), 5, 1),
-            SplitTrade(Trade(-5, 104), 0, 1)
+            SplitTrade(Trade(10, 101), 5),
+            SplitTrade(Trade(-5, 104), 0)
         ),
     ]
 
@@ -343,24 +343,24 @@ def test_many_buys_one_sell_fifo():
     pnl = pnl + Trade(-5, 104)
     assert pnl.matched == [
         MatchedTrade(
-            SplitTrade(Trade(1, 100), 0, 1),
-            SplitTrade(Trade(-5, 104), -4, 1)
+            SplitTrade(Trade(1, 100), 0),
+            SplitTrade(Trade(-5, 104), -4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(1, 102), 0, 1),
-            SplitTrade(Trade(-5, 104), -4, 1)
+            SplitTrade(Trade(1, 102), 0),
+            SplitTrade(Trade(-5, 104), -4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(1, 101), 0, 1),
-            SplitTrade(Trade(-5, 104), -4, 1)
+            SplitTrade(Trade(1, 101), 0),
+            SplitTrade(Trade(-5, 104), -4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(1, 104), 0, 1),
-            SplitTrade(Trade(-5, 104), -4, 1)
+            SplitTrade(Trade(1, 104), 0),
+            SplitTrade(Trade(-5, 104), -4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(1, 103), 0, 1),
-            SplitTrade(Trade(-5, 104), -4, 1)
+            SplitTrade(Trade(1, 103), 0),
+            SplitTrade(Trade(-5, 104), -4)
         ),
     ]
 
@@ -377,24 +377,24 @@ def test_many_buys_one_sell_lifo():
     pnl = pnl + Trade(-5, 104)
     assert pnl.matched == [
         MatchedTrade(
-            SplitTrade(Trade(1, 103), 0, 1),
-            SplitTrade(Trade(-5, 104), -4, 1)
+            SplitTrade(Trade(1, 103), 0),
+            SplitTrade(Trade(-5, 104), -4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(1, 104), 0, 1),
-            SplitTrade(Trade(-5, 104), -4, 1)
+            SplitTrade(Trade(1, 104), 0),
+            SplitTrade(Trade(-5, 104), -4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(1, 101), 0, 1),
-            SplitTrade(Trade(-5, 104), -4, 1)
+            SplitTrade(Trade(1, 101), 0),
+            SplitTrade(Trade(-5, 104), -4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(1, 102), 0, 1),
-            SplitTrade(Trade(-5, 104), -4, 1)
+            SplitTrade(Trade(1, 102), 0),
+            SplitTrade(Trade(-5, 104), -4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(1, 100), 0, 1),
-            SplitTrade(Trade(-5, 104), -4, 1)
+            SplitTrade(Trade(1, 100), 0),
+            SplitTrade(Trade(-5, 104), -4)
         ),
     ]
 
@@ -445,23 +445,23 @@ def test_many_sells_one_buy_best_price():
     pnl = pnl + Trade(5, 104)
     assert pnl.matched == [
         MatchedTrade(
-            SplitTrade(Trade(-1, 104), 0, 1),
+            SplitTrade(Trade(-1, 104), 0),
             SplitTrade(Trade(5, 104), 4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(-1, 103), 0, 1),
+            SplitTrade(Trade(-1, 103), 0),
             SplitTrade(Trade(5, 104), 4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(-1, 102), 0, 1),
+            SplitTrade(Trade(-1, 102), 0),
             SplitTrade(Trade(5, 104), 4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(-1, 101), 0, 1),
+            SplitTrade(Trade(-1, 101), 0),
             SplitTrade(Trade(5, 104), 4)
         ),
         MatchedTrade(
-            SplitTrade(Trade(-1, 100), 0, 1),
+            SplitTrade(Trade(-1, 100), 0),
             SplitTrade(Trade(5, 104), 4)
         ),
     ]

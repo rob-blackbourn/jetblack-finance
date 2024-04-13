@@ -6,11 +6,12 @@ from abc import abstractmethod
 from decimal import Decimal
 from typing import Any, Callable, Optional, Union
 
+from .matched_trade import MatchedTrade
 from .trade import ITrade
 from .split_trade import SplitTrade, ISplitTrade
 from .pnl_strip import PnlStrip
 from .pnl_state import PnlState, Matched, Unmatched
-from .algorithm import add_scaled_trade
+from .algorithm import add_split_trade
 
 
 class ABCPnl(PnlState):
@@ -36,11 +37,12 @@ class ABCPnl(PnlState):
     def __add__(self, other: Any) -> ABCPnl:
         assert isinstance(other, ITrade)
         split_trade = self._factory(other)
-        state = add_scaled_trade(
+        state = add_split_trade(
             self,
             split_trade,
             self._push_unmatched,
             self._pop_unmatched,
+            self._push_matched
         )
         return self._create(state)
 
@@ -57,6 +59,10 @@ class ABCPnl(PnlState):
 
     @abstractmethod
     def _push_unmatched(self, order: ISplitTrade, unmatched: Unmatched) -> Unmatched:
+        ...
+
+    @abstractmethod
+    def _push_matched(self, opening: ISplitTrade, closing: ISplitTrade, matched: Matched) -> Matched:
         ...
 
     @property
@@ -98,6 +104,9 @@ class FifoPnl(ABCPnl):
     def _push_unmatched(self, order: ISplitTrade, unmatched: Unmatched) -> Unmatched:
         return [order] + list(unmatched)
 
+    def _push_matched(self, opening: ISplitTrade, closing: ISplitTrade, matched: Matched) -> Matched:
+        return list(matched) + [MatchedTrade(opening, closing)]
+
 
 class LifoPnl(ABCPnl):
 
@@ -118,6 +127,9 @@ class LifoPnl(ABCPnl):
 
     def _push_unmatched(self, order: ISplitTrade, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
+
+    def _push_matched(self, opening: ISplitTrade, closing: ISplitTrade, matched: Matched) -> Matched:
+        return list(matched) + [MatchedTrade(opening, closing)]
 
 
 class BestPricePnl(ABCPnl):
@@ -146,6 +158,9 @@ class BestPricePnl(ABCPnl):
     def _push_unmatched(self, order: ISplitTrade, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
 
+    def _push_matched(self, opening: ISplitTrade, closing: ISplitTrade, matched: Matched) -> Matched:
+        return list(matched) + [MatchedTrade(opening, closing)]
+
 
 class WorstPricePnl(ABCPnl):
 
@@ -172,3 +187,6 @@ class WorstPricePnl(ABCPnl):
 
     def _push_unmatched(self, order: ISplitTrade, unmatched: Unmatched) -> Unmatched:
         return list(unmatched) + [order]
+
+    def _push_matched(self, opening: ISplitTrade, closing: ISplitTrade, matched: Matched) -> Matched:
+        return list(matched) + [MatchedTrade(opening, closing)]

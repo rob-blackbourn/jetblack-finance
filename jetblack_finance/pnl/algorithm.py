@@ -37,9 +37,8 @@ match.
 
 from typing import Callable, Optional, Sequence, Tuple
 
-from .matched_trade import MatchedTrade
 from .split_trade import ISplitTrade
-from .pnl_state import PnlState, Unmatched
+from .pnl_state import PnlState, Matched, Unmatched
 
 
 def _extend_position(
@@ -116,6 +115,7 @@ def _match(
         trade: ISplitTrade,
         push_unmatched: Callable[[ISplitTrade, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[ISplitTrade, Unmatched]],
+        push_matched: Callable[[ISplitTrade, ISplitTrade, Matched], Matched],
 ) -> Tuple[Optional[ISplitTrade], PnlState]:
     """Match the trade with one from the unmatched trades.
 
@@ -150,7 +150,7 @@ def _match(
     # Remove the quantity.
     quantity = pnl.quantity - matched_trade.quantity
 
-    matched = list(pnl.matched) + [MatchedTrade(matched_trade, trade)]
+    matched = push_matched(matched_trade, trade, pnl.matched)
 
     pnl = PnlState(quantity, cost, realized, unmatched, matched)
 
@@ -162,6 +162,7 @@ def _reduce_position(
         trade: Optional[ISplitTrade],
         push_unmatched: Callable[[ISplitTrade, Unmatched], Unmatched],
         pop_unmatched: Callable[[Unmatched], tuple[ISplitTrade, Unmatched]],
+        push_matched: Callable[[ISplitTrade, ISplitTrade, Matched], Matched],
 ) -> PnlState:
     """Reduce a long position with a sell, or a short position with a buy.
 
@@ -184,26 +185,29 @@ def _reduce_position(
             trade,
             push_unmatched,
             pop_unmatched,
+            push_matched,
         )
 
     if trade is not None and trade.quantity != 0:
-        pnl = add_scaled_trade(
+        pnl = add_split_trade(
             pnl,
             trade,
             push_unmatched,
             pop_unmatched,
+            push_matched,
         )
 
     return pnl
 
 
-def add_scaled_trade(
+def add_split_trade(
         pnl: PnlState,
         trade: ISplitTrade,
         push_unmatched: Callable[[ISplitTrade, Unmatched], Unmatched],
-        pop_unmatched: Callable[[Unmatched], tuple[ISplitTrade, Unmatched]]
+        pop_unmatched: Callable[[Unmatched], tuple[ISplitTrade, Unmatched]],
+        push_matched: Callable[[ISplitTrade, ISplitTrade, Matched], Matched],
 ) -> PnlState:
-    """Add an trade creating a new p/l state.
+    """Add a splitable trade creating a new p/l state.
 
     The trade could extend the position (buy to make a long or flat position
     longer, or sell to make a short or flat position shorter), or reduce the
@@ -232,4 +236,10 @@ def add_scaled_trade(
     ):
         return _extend_position(pnl, trade)
     else:
-        return _reduce_position(pnl, trade, push_unmatched, pop_unmatched)
+        return _reduce_position(
+            pnl,
+            trade,
+            push_unmatched,
+            pop_unmatched,
+            push_matched
+        )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from decimal import Decimal
-from typing import Literal, Tuple, Optional, Protocol
+from typing import Tuple, Optional, Protocol
 
 
 from .trade import ITrade
@@ -33,7 +33,6 @@ class SplitTrade(ISplitTrade):
             self,
             trade: ITrade,
             used: Optional[Decimal] = None,
-            sign: Literal[1, -1] = 1
     ) -> None:
         self._trade = trade
         self._used: Decimal = (
@@ -41,11 +40,10 @@ class SplitTrade(ISplitTrade):
             if used is not None
             else Decimal(0)
         )
-        self._sign = sign
 
     @property
     def quantity(self) -> Decimal:
-        return self._trade.quantity * self._sign - self._used
+        return self._trade.quantity - self._used
 
     @property
     def price(self) -> Decimal:
@@ -54,17 +52,16 @@ class SplitTrade(ISplitTrade):
     def split(self, quantity: Decimal) -> Tuple[SplitTrade, SplitTrade]:
         assert abs(self.quantity) >= abs(quantity)
         unused = self.quantity - quantity
-        matched = SplitTrade(self._trade, self._used + unused, self._sign)
-        unmatched = SplitTrade(self._trade, self._used + quantity, self._sign)
+        matched = SplitTrade(self._trade, self._used + unused)
+        unmatched = SplitTrade(self._trade, self._used + quantity)
         return matched, unmatched
 
     def __eq__(self, value: object) -> bool:
         return (
             isinstance(value, SplitTrade) and
             self._trade == value._trade and
-            self._used == value._used and
-            self._sign == value._sign
+            self._used == value._used
         )
 
     def __repr__(self) -> str:
-        return f"{self.quantity} (of {self._trade.quantity * self._sign}) @ {self.price}"
+        return f"{self.quantity} (of {self._trade.quantity}) @ {self.price}"
