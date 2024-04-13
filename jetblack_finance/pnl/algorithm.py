@@ -35,37 +35,22 @@ If the trade is larger it is split and the remainder becomes the next trade to
 match.
 """
 
+from decimal import Decimal
 from typing import Callable, Optional, Sequence, Tuple
 
 from .split_trade import ISplitTrade
-from .pnl_state import PnlState
+from .pnl_state import IPnlState, PnlState
 
-
-def _extend_position(
-        pnl: PnlState,
-        trade: ISplitTrade,
-) -> PnlState:
-    """Extend a long or flat position with a buy, or a short or flat position
-    with a sell.
-
-    Extending a position simply accrues quantity, cost, and unmatched trades.
-
-    Args:
-        pnl (PnlState): The current p/p state.
-        trade (ScaledTrade): The trade
-
-    Returns:
-        PnlState: The new p/l state.
-    """
-    return PnlState(
-        pnl.quantity + trade.quantity,
-        pnl.cost - trade.quantity * trade.price,
-        pnl.realized,
-        list(pnl.unmatched) + [trade],
-        list(pnl.matched)
-    )
-
-
+CreatePnl = Callable[
+    [
+        Decimal,
+        Decimal,
+        Decimal,
+        Sequence[ISplitTrade],
+        Sequence[Tuple[ISplitTrade, ISplitTrade]]
+    ],
+    IPnlState
+]
 PushUnmatched = Callable[
     [ISplitTrade, Sequence[ISplitTrade]],
     Sequence[ISplitTrade]
@@ -78,6 +63,32 @@ PushMatched = Callable[
     [ISplitTrade, ISplitTrade, Sequence[Tuple[ISplitTrade, ISplitTrade]]],
     Sequence[Tuple[ISplitTrade, ISplitTrade]]
 ]
+
+
+def _extend_position(
+        pnl: IPnlState,
+        trade: ISplitTrade,
+        create_pnl: CreatePnl
+) -> IPnlState:
+    """Extend a long or flat position with a buy, or a short or flat position
+    with a sell.
+
+    Extending a position simply accrues quantity, cost, and unmatched trades.
+
+    Args:
+        pnl (PnlState): The current p/p state.
+        trade (ScaledTrade): The trade
+
+    Returns:
+        PnlState: The new p/l state.
+    """
+    return create_pnl(
+        pnl.quantity + trade.quantity,
+        pnl.cost - trade.quantity * trade.price,
+        pnl.realized,
+        list(pnl.unmatched) + [trade],
+        list(pnl.matched)
+    )
 
 
 def _find_match(
@@ -125,12 +136,13 @@ def _find_match(
 
 
 def _match(
-        pnl: PnlState,
+        pnl: IPnlState,
         trade: ISplitTrade,
+        create_pnl: CreatePnl,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
-) -> Tuple[Optional[ISplitTrade], PnlState]:
+) -> Tuple[Optional[ISplitTrade], IPnlState]:
     """Match the trade with one from the unmatched trades.
 
     Args:
@@ -166,18 +178,19 @@ def _match(
 
     matched = push_matched(matched_trade, trade, pnl.matched)
 
-    pnl = PnlState(quantity, cost, realized, unmatched, matched)
+    pnl = create_pnl(quantity, cost, realized, unmatched, matched)
 
     return remainder, pnl
 
 
 def _reduce_position(
-        pnl: PnlState,
+        pnl: IPnlState,
         trade: Optional[ISplitTrade],
+        create_pnl: CreatePnl,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
-) -> PnlState:
+) -> IPnlState:
     """Reduce a long position with a sell, or a short position with a buy.
 
     Args:
@@ -197,6 +210,7 @@ def _reduce_position(
         trade, pnl = _match(
             pnl,
             trade,
+            create_pnl,
             push_unmatched,
             pop_unmatched,
             push_matched,
@@ -206,6 +220,7 @@ def _reduce_position(
         pnl = add_split_trade(
             pnl,
             trade,
+            create_pnl,
             push_unmatched,
             pop_unmatched,
             push_matched,
@@ -215,12 +230,13 @@ def _reduce_position(
 
 
 def add_split_trade(
-        pnl: PnlState,
+        pnl: IPnlState,
         trade: ISplitTrade,
+        create_pnl: CreatePnl,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
-) -> PnlState:
+) -> IPnlState:
     """Add a splitable trade creating a new p/l state.
 
     The trade could extend the position (buy to make a long or flat position
@@ -248,11 +264,12 @@ def add_split_trade(
         # We are short and selling.
         (pnl.quantity < 0 and trade.quantity < 0)
     ):
-        return _extend_position(pnl, trade)
+        return _extend_position(pnl, trade, create_pnl)
     else:
         return _reduce_position(
             pnl,
             trade,
+            create_pnl,
             push_unmatched,
             pop_unmatched,
             push_matched

@@ -8,7 +8,7 @@ from jetblack_finance.pnl import (
     BestPricePnl,
     WorstPricePnl,
     Trade,
-    SplitTrade
+    SplitTrade,
 )
 
 

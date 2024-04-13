@@ -4,18 +4,15 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional, Sequence, Tuple, cast
-
-from mariadb.connections import Connection
-from mariadb.cursors import Cursor
+from typing import Any, Optional, Sequence, Tuple
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from jetblack_finance.pnl import ITrade, ISplitTrade
 from jetblack_finance.pnl.algorithm import add_split_trade
-from jetblack_finance.pnl.pnl_state import PnlState
-from jetblack_finance.pnl.pnl_implementations import ABCPnl, Matched, Unmatched
+from jetblack_finance.pnl.pnl_state import IPnlState
+from jetblack_finance.pnl.pnl_implementations import ABCPnl
 
 
 from jetblack_finance.db.builder.create_sqlalchemy import (
@@ -32,67 +29,101 @@ from jetblack_finance.db.builder.create_sqlalchemy import (
 )
 
 
-def make_split_trade_factory(session: Session):
-
-    def split_trade_factory(trade: ITrade) -> ISplitTrade:
-        split_trade = SplitTrade(trade=trade, used=Decimal(0))
-        session.add(split_trade)
-        return split_trade
-
-    return split_trade_factory
-
-
-class FifoPnl(PnlState):
+class FifoPnl(ABCPnl):
 
     def __init__(
         self,
         session: Session,
-        quantity=Decimal(0),
-        cost=Decimal(0),
-        realized=Decimal(0),
-        unmatched: Sequence[ISplitTrade] = (),
-        matched: Sequence[Tuple[ISplitTrade, ISplitTrade]] = (),
+        instrument: Instrument,
+        book: Book,
+        pnl_state: Optional[IPnlState] = None
     ) -> None:
-        super().__init__(
-            quantity,
-            cost,
-            realized,
-            unmatched or [],
-            matched or [],
-        )
+        super().__init__(pnl_state)
         self._session = session
+        self._instrument = instrument
+        self._book = book
 
     def __add__(self, trade: Any) -> FifoPnl:
-        assert isinstance(trade, ITrade)
+        assert isinstance(trade, Trade)
         split_trade = SplitTrade(trade=trade)
         state = add_split_trade(
-            self,
+            self._pnl_state,
             split_trade,
-            self._push_unmatched,
-            self._pop_unmatched,
-            self._push_matched
+            self.create_pnl,
+            self.push_unmatched,
+            self.pop_unmatched,
+            self.push_matched
         )
         return FifoPnl(
             self._session,
-            state.quantity,
-            state.cost,
-            state.realized,
-            state.unmatched,
-            state.matched,
+            self._instrument,
+            self._book,
+            state
         )
 
-    def _pop_unmatched(
+    def create(
+        self,
+        pnl_state: IPnlState
+    ) -> ABCPnl:
+        return FifoPnl(
+            self._session,
+            self._instrument,
+            self._book,
+            pnl_state
+        )
+
+    def split_trade(self, trade: ITrade) -> ISplitTrade:
+        return SplitTrade(trade=trade)
+
+    def create_pnl(
+        self,
+        quantity: Decimal,
+        cost: Decimal,
+        realized: Decimal,
+        unmatched: Sequence[ISplitTrade],
+        matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
+    ) -> IPnlState:
+        _opening, closing = matched[0]
+        self._session.add(
+            Position(
+                instrument=self._instrument,
+                book=self._book,
+                split_trade=closing,
+                quantity=quantity,
+                cost=cost,
+                realized=realized
+            )
+        )
+        return self.create_pnl(
+            quantity,
+            cost,
+            realized,
+            unmatched,
+            matched
+        )
+
+    def pop_unmatched(
             self,
             unmatched: Sequence[ISplitTrade]
     ) -> Tuple[ISplitTrade, Sequence[ISplitTrade]]:
+        self._session.delete(unmatched[0])
         return unmatched[0], unmatched[1:]
 
-    def _push_unmatched(self, split_trade: ISplitTrade, unmatched: Unmatched) -> Unmatched:
-        UnmatchedTrade(split_trade=split_trade)
+    def push_unmatched(
+            self,
+            split_trade: ISplitTrade,
+            unmatched: Sequence[ISplitTrade]
+    ) -> Sequence[ISplitTrade]:
+        self._session.add(UnmatchedTrade(split_trade=split_trade))
         return [split_trade] + list(unmatched)
 
-    def _push_matched(self, opening: ISplitTrade, closing: ISplitTrade, matched: Matched) -> Matched:
-        return list(matched) + [MatchedTrade(opening, closing)]
+    def push_matched(
+            self,
+            opening: ISplitTrade, closing: ISplitTrade,
+            matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
+    ) -> Sequence[Tuple[ISplitTrade, ISplitTrade]]:
+        self._session.add(MatchedTrade(opening=opening, closing=closing))
+        return list(matched) + [(opening, closing)]
 
 
 def main():
@@ -100,7 +131,6 @@ def main():
     Base.metadata.create_all(engine)
 
     with Session(engine) as session:
-        pnl = FifoPnl(factory=make_split_trade_factory(session))
 
         usd = Currency(
             ccy='USD',
@@ -125,6 +155,12 @@ def main():
             counterparty=fatbank
         )
         session.add(t1)
+
+        pnl = FifoPnl(
+            session,
+            ibm,
+            fatbank
+        )
 
         pnl2 = pnl + t1
         session.commit()
