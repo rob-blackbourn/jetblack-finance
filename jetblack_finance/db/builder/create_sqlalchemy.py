@@ -120,7 +120,7 @@ class SplitTrade(Base):
         ForeignKey("trade.trade_id")
     )
     trade: Mapped[Trade] = relationship()
-    used: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    used: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal(0))
 
     @property
     def quantity(self) -> Decimal:

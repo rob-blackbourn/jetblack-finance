@@ -9,7 +9,7 @@ from typing import Any, Optional, Sequence, Tuple, Union
 from .trade import ITrade
 from .split_trade import SplitTrade, ISplitTrade
 from .pnl_strip import PnlStrip
-from .pnl_state import PnlState, IPnlState
+from .pnl_state import PnlState
 from .algorithm import add_split_trade
 
 
@@ -17,11 +17,15 @@ class ABCPnl:
 
     def __init__(
         self,
-        pnl_state: Optional[IPnlState] = None,
+        pnl_state: Optional[PnlState] = None,
     ) -> None:
         if pnl_state is None:
-            pnl_state = self.create_pnl(
-                Decimal(0), Decimal(0), Decimal(0), (), ()
+            pnl_state = PnlState(
+                Decimal(0),
+                Decimal(0),
+                Decimal(0),
+                (),
+                (),
             )
         self._pnl_state = pnl_state
 
@@ -41,7 +45,7 @@ class ABCPnl:
     @abstractmethod
     def create(
         self,
-        pnl_state: IPnlState
+        pnl_state: PnlState
     ) -> ABCPnl:
         ...
 
@@ -50,14 +54,7 @@ class ABCPnl:
         ...
 
     @abstractmethod
-    def create_pnl(
-        self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: Sequence[ISplitTrade],
-        matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> IPnlState:
+    def create_pnl(self, pnl_state: PnlState) -> PnlState:
         ...
 
     @abstractmethod
@@ -70,7 +67,7 @@ class ABCPnl:
     @abstractmethod
     def push_unmatched(
         self,
-        order: ISplitTrade,
+        split_trade: ISplitTrade,
         unmatched: Sequence[ISplitTrade]
     ) -> Sequence[ISplitTrade]:
         ...
@@ -130,28 +127,15 @@ class FifoPnl(ABCPnl):
 
     def create(
         self,
-        pnl_state: IPnlState
+        pnl_state: PnlState
     ) -> FifoPnl:
         return FifoPnl(pnl_state)
 
     def split_trade(self, trade: ITrade) -> ISplitTrade:
         return SplitTrade(trade)
 
-    def create_pnl(
-        self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: Sequence[ISplitTrade],
-        matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> IPnlState:
-        return PnlState(
-            quantity,
-            cost,
-            realized,
-            unmatched,
-            matched
-        )
+    def create_pnl(self, pnl_state: PnlState) -> PnlState:
+        return pnl_state
 
     def pop_unmatched(
             self,
@@ -160,10 +144,11 @@ class FifoPnl(ABCPnl):
         return unmatched[0], unmatched[1:]
 
     def push_unmatched(
-            self, order: ISplitTrade,
+            self,
+            split_trade: ISplitTrade,
             unmatched: Sequence[ISplitTrade]
     ) -> Sequence[ISplitTrade]:
-        return [order] + list(unmatched)
+        return [split_trade] + list(unmatched)
 
     def push_matched(
             self,
@@ -179,28 +164,15 @@ class LifoPnl(ABCPnl):
 
     def create(
         self,
-        pnl_state: IPnlState
+        pnl_state: PnlState
     ) -> LifoPnl:
         return LifoPnl(pnl_state)
 
     def split_trade(self, trade: ITrade) -> ISplitTrade:
         return SplitTrade(trade)
 
-    def create_pnl(
-        self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: Sequence[ISplitTrade],
-        matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> IPnlState:
-        return PnlState(
-            quantity,
-            cost,
-            realized,
-            unmatched,
-            matched
-        )
+    def create_pnl(self, pnl_state: PnlState) -> PnlState:
+        return pnl_state
 
     def pop_unmatched(
             self,
@@ -210,10 +182,10 @@ class LifoPnl(ABCPnl):
 
     def push_unmatched(
             self,
-            order: ISplitTrade,
+            split_trade: ISplitTrade,
             unmatched: Sequence[ISplitTrade]
     ) -> Sequence[ISplitTrade]:
-        return list(unmatched) + [order]
+        return list(unmatched) + [split_trade]
 
     def push_matched(
             self,
@@ -228,28 +200,15 @@ class BestPricePnl(ABCPnl):
 
     def create(
         self,
-        pnl_state: IPnlState
+        pnl_state: PnlState
     ) -> BestPricePnl:
         return BestPricePnl(pnl_state)
 
     def split_trade(self, trade: ITrade) -> ISplitTrade:
         return SplitTrade(trade)
 
-    def create_pnl(
-        self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: Sequence[ISplitTrade],
-        matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> IPnlState:
-        return PnlState(
-            quantity,
-            cost,
-            realized,
-            unmatched,
-            matched
-        )
+    def create_pnl(self, pnl_state: PnlState) -> PnlState:
+        return pnl_state
 
     def pop_unmatched(
             self,
@@ -265,10 +224,10 @@ class BestPricePnl(ABCPnl):
 
     def push_unmatched(
             self,
-            order: ISplitTrade,
+            split_trade: ISplitTrade,
             unmatched: Sequence[ISplitTrade]
     ) -> Sequence[ISplitTrade]:
-        return list(unmatched) + [order]
+        return list(unmatched) + [split_trade]
 
     def push_matched(
             self,
@@ -283,28 +242,15 @@ class WorstPricePnl(ABCPnl):
 
     def create(
         self,
-        pnl_state: IPnlState
+        pnl_state: PnlState
     ) -> WorstPricePnl:
         return WorstPricePnl(pnl_state)
 
     def split_trade(self, trade: ITrade) -> ISplitTrade:
         return SplitTrade(trade)
 
-    def create_pnl(
-        self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: Sequence[ISplitTrade],
-        matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> IPnlState:
-        return PnlState(
-            quantity,
-            cost,
-            realized,
-            unmatched,
-            matched
-        )
+    def create_pnl(self, pnl_state: PnlState) -> PnlState:
+        return pnl_state
 
     def pop_unmatched(
             self,
@@ -320,10 +266,10 @@ class WorstPricePnl(ABCPnl):
 
     def push_unmatched(
             self,
-            order: ISplitTrade,
+            split_trade: ISplitTrade,
             unmatched: Sequence[ISplitTrade]
     ) -> Sequence[ISplitTrade]:
-        return list(unmatched) + [order]
+        return list(unmatched) + [split_trade]
 
     def push_matched(
             self,
