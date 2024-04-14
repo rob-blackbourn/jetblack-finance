@@ -132,25 +132,25 @@ class PnlFactory:
 
     def __init__(self, session: Session) -> None:
         self._session = session
-        self._cache: Dict[int, Dict[int, FifoPnl]] = {}
+        self._cache: Dict[Book, Dict[Instrument, FifoPnl]] = {}
 
     def __add__(self, other: Any) -> PnlFactory:
         assert isinstance(other, Trade)
         trade = cast(Trade, other)
         if trade.book_id not in self._cache:
-            self._cache[trade.book_id] = {}
-        by_instrument = self._cache[trade.book_id]
-        if trade.instrument_id not in by_instrument:
-            by_instrument[trade.instrument_id] = FifoPnl(
+            self._cache[trade.book] = {}
+        by_instrument = self._cache[trade.book]
+        if trade.instrument not in by_instrument:
+            by_instrument[trade.instrument] = FifoPnl(
                 self._session,
                 trade.instrument,
                 trade.book
             )
-        pnl = by_instrument[trade.instrument_id]
+        pnl = by_instrument[trade.instrument]
 
         pnl = pnl + trade
 
-        by_instrument[trade.instrument_id] = pnl
+        by_instrument[trade.instrument] = pnl
 
         return self
 
