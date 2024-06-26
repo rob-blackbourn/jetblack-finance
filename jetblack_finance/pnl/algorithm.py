@@ -184,9 +184,13 @@ def _find_match(
         # remainder still to match.
 
         remainder = create_partial_trade(
-            partial_trade.trade, partial_trade.quantity + matched_trade.quantity)
+            partial_trade.trade,
+            partial_trade.quantity + matched_trade.quantity
+        )
         partial_trade = create_partial_trade(
-            partial_trade.trade, -matched_trade.quantity)
+            partial_trade.trade,
+            -matched_trade.quantity
+        )
 
     elif abs(partial_trade.quantity) < abs(matched_trade.quantity):
 
@@ -194,9 +198,13 @@ def _find_match(
         # and return the spare to the unmatched.
 
         spare = create_partial_trade(
-            matched_trade.trade, matched_trade.quantity + partial_trade.quantity)
+            matched_trade.trade,
+            matched_trade.quantity + partial_trade.quantity
+        )
         matched_trade = create_partial_trade(
-            matched_trade.trade, -partial_trade.quantity)
+            matched_trade.trade,
+            -partial_trade.quantity
+        )
         pnl_state.unmatched.push(spare)
 
         # As the entire trade has been filled there is no remainder.
