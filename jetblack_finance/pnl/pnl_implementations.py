@@ -7,12 +7,45 @@ from decimal import Decimal
 from typing import Any, Generic, Sequence, TypeVar, cast
 
 from .trade import ITrade
-from .partial_trade import PartialTrade, IPartialTrade
+from .partial_trade import IPartialTrade
 from .pnl_strip import PnlStrip
 from .pnl_state import IPnlState
 from .algorithm import add_trade
 
 T = TypeVar('T', bound='ABCPnl')
+
+
+class PartialTrade(IPartialTrade):
+
+    def __init__(
+            self,
+            trade: ITrade,
+            quantity: Decimal
+    ) -> None:
+        self._trade = trade
+        self._quantity = quantity
+
+    @property
+    def trade(self) -> ITrade:
+        return self._trade
+
+    @property
+    def quantity(self) -> Decimal:
+        return self._quantity
+
+    @property
+    def price(self) -> Decimal:
+        return self._trade.price
+
+    def __eq__(self, value: object) -> bool:
+        return (
+            isinstance(value, PartialTrade) and
+            self._trade == value._trade and
+            self.quantity == value.quantity
+        )
+
+    def __repr__(self) -> str:
+        return f"{self.quantity} (of {self._trade.quantity}) @ {self.price}"
 
 
 class ABCPnl(IPnlState, Generic[T]):
