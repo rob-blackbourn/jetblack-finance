@@ -7,9 +7,35 @@ from jetblack_finance.pnl import (
     LifoPnl,
     BestPricePnl,
     WorstPricePnl,
-    Trade,
+    ITrade,
     PartialTrade,
 )
+
+
+class Trade(ITrade):
+    """A simple trade"""
+
+    def __init__(self, quantity: Decimal, price: Decimal) -> None:
+        self._quantity = quantity
+        self._price = price
+
+    @property
+    def quantity(self) -> Decimal:
+        return self._quantity
+
+    @property
+    def price(self) -> Decimal:
+        return self._price
+
+    def __eq__(self, value: object) -> bool:
+        return (
+            isinstance(value, Trade) and
+            value.quantity == self.quantity and
+            value.price == self.price
+        )
+
+    def __repr__(self) -> str:
+        return f"{self.quantity} @ {self.price}"
 
 
 def test_long_to_short_with_splits_best_price():

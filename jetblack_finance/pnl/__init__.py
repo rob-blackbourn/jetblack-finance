@@ -9,11 +9,10 @@ from .pnl_implementations import (
 )
 from .pnl_state import IPnlState
 from .partial_trade import IPartialTrade, PartialTrade
-from .trade import ITrade, Trade
+from .trade import ITrade
 
 __all__ = [
     'ITrade',
-    'Trade',
 
     'ABCPnl',
     'FifoPnl',
@@ -21,6 +20,7 @@ __all__ = [
     'BestPricePnl',
     'WorstPricePnl',
 
+    'IPnlState',
     'IPartialTrade',
     'PartialTrade',
 ]
