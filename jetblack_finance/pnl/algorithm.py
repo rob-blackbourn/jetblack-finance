@@ -296,10 +296,9 @@ def add_trade(
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
 ) -> IPnlState:
-    partial_trade = create_partial_trade(trade, trade.quantity)
     return add_partial_trade(
         pnl_state,
-        partial_trade,
+        create_partial_trade(trade, trade.quantity),
         create_pnl_state,
         create_partial_trade,
         push_unmatched,
