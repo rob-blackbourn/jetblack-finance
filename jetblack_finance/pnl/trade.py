@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Protocol, Union, runtime_checkable
+from typing import Protocol, runtime_checkable
 
-Number = Union[Decimal, int]
+Number = Decimal | int
 
 
 @runtime_checkable

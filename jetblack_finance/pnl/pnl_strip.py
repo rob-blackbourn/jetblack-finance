@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import NamedTuple, Union
+from typing import NamedTuple
 
+from .trade import Number
 
 class PnlStrip(NamedTuple):
     quantity: Decimal
     avg_cost: Decimal
-    price: Union[Decimal, int]
+    price: Number
     realized: Decimal
     unrealized: Decimal

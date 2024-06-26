@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from decimal import Decimal
-from typing import Any, Sequence, Union
+from typing import Any, Sequence
 
-from .trade import ITrade
+from .trade import ITrade, Number
 from .split_trade import SplitTrade, ISplitTrade
 from .pnl_strip import PnlStrip
 from .pnl_state import PnlState
@@ -107,10 +107,10 @@ class ABCPnl:
             return Decimal(0)
         return -self.cost / self.quantity
 
-    def unrealized(self, price: Union[Decimal, int]) -> Decimal:
+    def unrealized(self, price: Number) -> Decimal:
         return self.quantity * price + self.cost
 
-    def strip(self, price: Union[Decimal, int]) -> PnlStrip:
+    def strip(self, price: Number) -> PnlStrip:
         return PnlStrip(
             self.quantity,
             self.avg_cost,
