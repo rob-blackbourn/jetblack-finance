@@ -54,6 +54,27 @@ class PartialTrade(IPartialTrade):
 
 class ABCPnl(IPnlState, Generic[T]):
 
+    class MatchedPool(IMatchedPool):
+
+        def __init__(self, pool: Sequence[tuple[IPartialTrade, IPartialTrade]] = ()) -> None:
+            self._pool = pool
+
+        def push(self, opening: IPartialTrade, closing: IPartialTrade) -> None:
+            matched_trade = (opening, closing)
+            self._pool = tuple((*self._pool, matched_trade))
+
+        def __len__(self) -> int:
+            return len(self._pool)
+
+        def __eq__(self, value: object) -> bool:
+            return (
+                isinstance(value, FifoPnl.MatchedPool) and
+                value._pool == self._pool
+            )
+
+        def __str__(self) -> str:
+            return str(self._pool)
+
     def __init__(
             self,
             quantity: Decimal | int,
@@ -165,27 +186,6 @@ class FifoPnl(ABCPnl['FifoPnl']):
         def __str__(self) -> str:
             return str(self._pool)
 
-    class MatchedPool(IMatchedPool):
-
-        def __init__(self, pool: Sequence[tuple[IPartialTrade, IPartialTrade]] = ()) -> None:
-            self._pool = pool
-
-        def push(self, opening: IPartialTrade, closing: IPartialTrade) -> None:
-            matched_trade = (opening, closing)
-            self._pool = tuple((*self._pool, matched_trade))
-
-        def __len__(self) -> int:
-            return len(self._pool)
-
-        def __eq__(self, value: object) -> bool:
-            return (
-                isinstance(value, FifoPnl.MatchedPool) and
-                value._pool == self._pool
-            )
-
-        def __str__(self) -> str:
-            return str(self._pool)
-
     def create_pnl(
             self,
             quantity: Decimal,
@@ -226,27 +226,6 @@ class LifoPnl(ABCPnl):
         def __eq__(self, value: object) -> bool:
             return (
                 isinstance(value, LifoPnl.UnmatchedPool) and
-                value._pool == self._pool
-            )
-
-        def __str__(self) -> str:
-            return str(self._pool)
-
-    class MatchedPool(IMatchedPool):
-
-        def __init__(self, pool: Sequence[tuple[IPartialTrade, IPartialTrade]] = ()) -> None:
-            self._pool = pool
-
-        def push(self, opening: IPartialTrade, closing: IPartialTrade) -> None:
-            matched_trade = (opening, closing)
-            self._pool = tuple((*self._pool, matched_trade))
-
-        def __len__(self) -> int:
-            return len(self._pool)
-
-        def __eq__(self, value: object) -> bool:
-            return (
-                isinstance(value, LifoPnl.MatchedPool) and
                 value._pool == self._pool
             )
 
@@ -304,27 +283,6 @@ class BestPricePnl(ABCPnl):
         def __str__(self) -> str:
             return str(self._pool)
 
-    class MatchedPool(IMatchedPool):
-
-        def __init__(self, pool: Sequence[tuple[IPartialTrade, IPartialTrade]] = ()) -> None:
-            self._pool = pool
-
-        def push(self, opening: IPartialTrade, closing: IPartialTrade) -> None:
-            matched_trade = (opening, closing)
-            self._pool = tuple((*self._pool, matched_trade))
-
-        def __len__(self) -> int:
-            return len(self._pool)
-
-        def __eq__(self, value: object) -> bool:
-            return (
-                isinstance(value, BestPricePnl.MatchedPool) and
-                value._pool == self._pool
-            )
-
-        def __str__(self) -> str:
-            return str(self._pool)
-
     def create_pnl(
             self,
             quantity: Decimal,
@@ -370,27 +328,6 @@ class WorstPricePnl(ABCPnl):
         def __eq__(self, value: object) -> bool:
             return (
                 isinstance(value, WorstPricePnl.UnmatchedPool) and
-                value._pool == self._pool
-            )
-
-        def __str__(self) -> str:
-            return str(self._pool)
-
-    class MatchedPool(IMatchedPool):
-
-        def __init__(self, pool: Sequence[tuple[IPartialTrade, IPartialTrade]] = ()) -> None:
-            self._pool = pool
-
-        def push(self, opening: IPartialTrade, closing: IPartialTrade) -> None:
-            matched_trade = (opening, closing)
-            self._pool = tuple((*self._pool, matched_trade))
-
-        def __len__(self) -> int:
-            return len(self._pool)
-
-        def __eq__(self, value: object) -> bool:
-            return (
-                isinstance(value, WorstPricePnl.MatchedPool) and
                 value._pool == self._pool
             )
 
