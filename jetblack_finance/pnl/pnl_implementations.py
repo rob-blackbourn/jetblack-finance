@@ -10,7 +10,7 @@ from .trade import ITrade
 from .partial_trade import PartialTrade, IPartialTrade
 from .pnl_strip import PnlStrip
 from .pnl_state import PnlState
-from .algorithm import add_partial_trade
+from .algorithm import add_trade
 
 
 class ABCPnl:
@@ -31,10 +31,9 @@ class ABCPnl:
 
     def __add__(self, trade: Any) -> ABCPnl:
         assert isinstance(trade, ITrade)
-        split_trade = self.create_partial_trade(trade, trade.quantity)
-        state = add_partial_trade(
+        state = add_trade(
             self._pnl_state,
-            split_trade,
+            trade,
             self.create_pnl,
             self.create_partial_trade,
             self.push_unmatched,

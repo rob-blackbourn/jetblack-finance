@@ -59,7 +59,7 @@ CreatePartialTrade = Callable[[ITrade, Decimal], IPartialTrade]
 
 def _extend_position(
         pnl: PnlState,
-        trade: IPartialTrade,
+        partial_trade: IPartialTrade,
         create_pnl: CreatePnl
 ) -> PnlState:
     """Extend a long or flat position with a buy, or a short or flat position
@@ -76,10 +76,10 @@ def _extend_position(
     """
     return create_pnl(
         PnlState(
-            pnl.quantity + trade.quantity,
-            pnl.cost - trade.quantity * trade.price,
+            pnl.quantity + partial_trade.quantity,
+            pnl.cost - partial_trade.quantity * partial_trade.price,
             pnl.realized,
-            list(pnl.unmatched) + [trade],
+            list(pnl.unmatched) + [partial_trade],
             list(pnl.matched)
         )
     )
@@ -135,7 +135,7 @@ def _find_match(
 
 def _match(
         pnl: PnlState,
-        trade: IPartialTrade,
+        partial_trade: IPartialTrade,
         create_pnl: CreatePnl,
         create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
@@ -159,8 +159,8 @@ def _match(
             of the trade (or None if the trade was completely filled) and the
             new p/l state.
     """
-    unmatched, trade, matched_trade, remainder = _find_match(
-        trade,
+    unmatched, partial_trade, matched_trade, remainder = _find_match(
+        partial_trade,
         pnl.unmatched,
         create_partial_trade,
         push_unmatched,
@@ -168,7 +168,7 @@ def _match(
     )
 
     # Note that the open will have the opposite sign to the close.
-    close_value = trade.quantity * trade.price
+    close_value = partial_trade.quantity * partial_trade.price
     open_cost = -(matched_trade.quantity * matched_trade.price)
 
     # The difference between the two costs is the realized value.
@@ -178,7 +178,7 @@ def _match(
     # Remove the quantity.
     quantity = pnl.quantity - matched_trade.quantity
 
-    matched = push_matched(matched_trade, trade, pnl.matched)
+    matched = push_matched(matched_trade, partial_trade, pnl.matched)
 
     pnl = create_pnl(PnlState(quantity, cost, realized, unmatched, matched))
 
@@ -187,32 +187,17 @@ def _match(
 
 def _reduce_position(
         pnl: PnlState,
-        trade: IPartialTrade | None,
+        partial_trade: IPartialTrade | None,
         create_pnl: CreatePnl,
         create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
 ) -> PnlState:
-    """Reduce a long position with a sell, or a short position with a buy.
-
-    Args:
-        pnl (PnlState): The current p/l state.
-        trade (IPartialTrade | None): The trade.
-        push_unmatched (Callable[[IPartialTrade, Unmatched], Unmatched]): A
-            function to add an unmatched trade on to a sequence of unmatched
-            trades.
-        pop_unmatched (Callable[[Unmatched], tuple[IPartialTrade, Unmatched]]): A
-            function to take an unmatched trade from a sequence of unmatched
-            trades.
-
-    Returns:
-        PnlState: The new p/l state.
-    """
-    while trade is not None and trade.quantity != 0 and pnl.unmatched:
-        trade, pnl = _match(
+    while partial_trade is not None and partial_trade.quantity != 0 and pnl.unmatched:
+        partial_trade, pnl = _match(
             pnl,
-            trade,
+            partial_trade,
             create_pnl,
             create_partial_trade,
             push_unmatched,
@@ -220,10 +205,10 @@ def _reduce_position(
             push_matched,
         )
 
-    if trade is not None and trade.quantity != 0:
+    if partial_trade is not None and partial_trade.quantity != 0:
         pnl = add_partial_trade(
             pnl,
-            trade,
+            partial_trade,
             create_pnl,
             create_partial_trade,
             push_unmatched,
@@ -236,48 +221,49 @@ def _reduce_position(
 
 def add_partial_trade(
         pnl: PnlState,
-        trade: IPartialTrade,
+        partial_trade: IPartialTrade,
         create_pnl: CreatePnl,
         create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
 ) -> PnlState:
-    """Add a partial trade creating a new p/l state.
-
-    The trade could extend the position (buy to make a long or flat position
-    longer, or sell to make a short or flat position shorter), or reduce the
-    position (by selling from a long position, or buying back from a short
-    position)
-
-    Args:
-        pnl (PnlState): The current p/l state.
-        trade (IPartialTrade): The scaled trade to add.
-        push_unmatched (Callable[[IPartialTrade, Unmatched], Unmatched]): A
-            function to add a scaled trade to the sequence of unmatched trades.
-        pop_unmatched (Callable[[Unmatched], tuple[IPartialTrade, Unmatched]]): A
-            function to take a scaled trade from the sequence of unmatched
-            trades.
-
-    Returns:
-        PnlState: The new p/l state.
-    """
     if (
         # We are flat
         pnl.quantity == 0 or
         # We are long and buying
-        (pnl.quantity > 0 and trade.quantity > 0) or
+        (pnl.quantity > 0 and partial_trade.quantity > 0) or
         # We are short and selling.
-        (pnl.quantity < 0 and trade.quantity < 0)
+        (pnl.quantity < 0 and partial_trade.quantity < 0)
     ):
-        return _extend_position(pnl, trade, create_pnl)
+        return _extend_position(pnl, partial_trade, create_pnl)
     else:
         return _reduce_position(
             pnl,
-            trade,
+            partial_trade,
             create_pnl,
             create_partial_trade,
             push_unmatched,
             pop_unmatched,
             push_matched
         )
+
+def add_trade(
+        pnl: PnlState,
+        trade: ITrade,
+        create_pnl: CreatePnl,
+        create_partial_trade: CreatePartialTrade,
+        push_unmatched: PushUnmatched,
+        pop_unmatched: PopUnmatched,
+        push_matched: PushMatched,
+) -> PnlState:
+    partial_trade = create_partial_trade(trade, trade.quantity)
+    return add_partial_trade(
+        pnl,
+        partial_trade,
+        create_pnl,
+        create_partial_trade,
+        push_unmatched,
+        pop_unmatched,
+        push_matched
+    )
