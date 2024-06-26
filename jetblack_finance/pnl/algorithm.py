@@ -128,12 +128,13 @@ CreatePartialTrade = Callable[[ITrade, Decimal], IPartialTrade]
 def _extend_position(
         pnl_state: IPnlState,
         partial_trade: IPartialTrade,
-        create_pnl_state: CreatePnlState
+        create_pnl_state: CreatePnlState,
+        push_unmatched: PushUnmatched
 ) -> IPnlState:
     quantity = pnl_state.quantity + partial_trade.quantity
     cost = pnl_state.cost - partial_trade.quantity * partial_trade.price
     realized = pnl_state.realized
-    unmatched = tuple((*pnl_state.unmatched, partial_trade))
+    unmatched = push_unmatched(partial_trade, pnl_state.unmatched)
     matched = pnl_state.matched
 
     return create_pnl_state(
@@ -274,7 +275,12 @@ def add_partial_trade(
         # We are short and selling.
         (pnl_state.quantity < 0 and partial_trade.quantity < 0)
     ):
-        return _extend_position(pnl_state, partial_trade, create_pnl_state)
+        return _extend_position(
+            pnl_state,
+            partial_trade,
+            create_pnl_state,
+            push_unmatched
+        )
     else:
         return _reduce_position(
             pnl_state,

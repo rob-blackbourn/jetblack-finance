@@ -18,10 +18,10 @@ class PartialTrade(IPartialTrade):
     def __init__(
             self,
             trade: ITrade,
-            quantity: Decimal
+            quantity: Decimal | int
     ) -> None:
         self._trade = trade
-        self._quantity = quantity
+        self._quantity = Decimal(quantity)
 
     @property
     def trade(self) -> ITrade:
@@ -147,13 +147,13 @@ class ABCPnl(IPnlState, Generic[T]):
     def unrealized(self, price: Decimal) -> Decimal:
         return self.quantity * price + self.cost
 
-    def strip(self, price: Decimal) -> PnlStrip:
+    def strip(self, price: Decimal | int) -> PnlStrip:
         return PnlStrip(
             self.quantity,
             self.avg_cost,
-            price,
+            Decimal(price),
             self.realized,
-            self.unrealized(price)
+            self.unrealized(Decimal(price))
         )
 
     def __repr__(self) -> str:
@@ -186,7 +186,7 @@ class FifoPnl(ABCPnl['FifoPnl']):
             split_trade: IPartialTrade,
             unmatched: Sequence[IPartialTrade]
     ) -> Sequence[IPartialTrade]:
-        return [split_trade] + list(unmatched)
+        return tuple((*unmatched, split_trade))
 
     def push_matched(
             self,
@@ -195,7 +195,7 @@ class FifoPnl(ABCPnl['FifoPnl']):
             matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
     ) -> Sequence[tuple[IPartialTrade, IPartialTrade]]:
         matched_trade = (opening, closing)
-        return list(matched) + [matched_trade]
+        return tuple((*matched, matched_trade))
 
 
 class LifoPnl(ABCPnl):

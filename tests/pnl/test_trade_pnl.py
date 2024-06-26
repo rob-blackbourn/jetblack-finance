@@ -15,9 +15,9 @@ from jetblack_finance.pnl.impl.simple import (
 class Trade(ITrade):
     """A simple trade"""
 
-    def __init__(self, quantity: Decimal, price: Decimal) -> None:
-        self._quantity = quantity
-        self._price = price
+    def __init__(self, quantity: Decimal | int, price: Decimal | int) -> None:
+        self._quantity = Decimal(quantity)
+        self._price = Decimal(price)
 
     @property
     def quantity(self) -> Decimal:
@@ -195,12 +195,13 @@ def test_long_to_short_fifo_with_profit():
     assert pnl.cost == 0
     assert pnl.realized == 2
     assert len(pnl.unmatched) == 0
-    assert pnl.matched == [
+    expected = (
         (
             PartialTrade(Trade(1, 100), 1),
             PartialTrade(Trade(-1, 102), -1)
-        )
-    ]
+        ),
+    )
+    assert pnl.matched == expected
 
 
 def test_short_to_long_fifo_with_profit():
@@ -214,12 +215,12 @@ def test_short_to_long_fifo_with_profit():
     assert pnl.cost == 0
     assert pnl.realized == 2
     assert len(pnl.unmatched) == 0
-    assert pnl.matched == [
+    assert pnl.matched == (
         (
             PartialTrade(Trade(-1, 102), -1),
             PartialTrade(Trade(1, 100), 1)
-        )
-    ]
+        ),
+    )
 
 
 def test_long_to_short_fifo_with_loss():
@@ -233,12 +234,12 @@ def test_long_to_short_fifo_with_loss():
     assert pnl.cost == 0
     assert pnl.realized == -2
     assert len(pnl.unmatched) == 0
-    assert pnl.matched == [
+    assert pnl.matched == (
         (
             PartialTrade(Trade(1, 102), 1),
             PartialTrade(Trade(-1, 100), -1)
-        )
-    ]
+        ),
+    )
 
 
 def test_short_to_long_fifo_with_loss():
@@ -252,12 +253,12 @@ def test_short_to_long_fifo_with_loss():
     assert pnl.cost == 0
     assert pnl.realized == -2
     assert len(pnl.unmatched) == 0
-    assert pnl.matched == [
+    assert pnl.matched == (
         (
             PartialTrade(Trade(-1, 100), -1),
             PartialTrade(Trade(1, 102), 1)
-        )
-    ]
+        ),
+    )
 
 
 def test_long_sell_fifo_through_flat():
@@ -269,15 +270,15 @@ def test_long_sell_fifo_through_flat():
     assert pnl.quantity == -1
     assert pnl.cost == 102
     assert pnl.realized == 1
-    assert list(pnl.unmatched) == [
-        PartialTrade(Trade(-2, 102), -1)
-    ]
-    assert pnl.matched == [
+    assert pnl.unmatched == (
+        PartialTrade(Trade(-2, 102), -1),
+    )
+    assert pnl.matched == (
         (
             PartialTrade(Trade(1, 101), 1),
             PartialTrade(Trade(-2, 102), -1)
-        )
-    ]
+        ),
+    )
 
 
 def test_short_buy_fifo_through_flat():
@@ -289,15 +290,15 @@ def test_short_buy_fifo_through_flat():
     assert pnl.quantity == 1
     assert pnl.cost == -101
     assert pnl.realized == 1
-    assert list(pnl.unmatched) == [
-        PartialTrade(Trade(2, 101), 1)
-    ]
-    assert pnl.matched == [
+    assert pnl.unmatched == (
+        PartialTrade(Trade(2, 101), 1),
+    )
+    assert pnl.matched == (
         (
             PartialTrade(Trade(-1, 102), -1),
             PartialTrade(Trade(2, 101), 1)
-        )
-    ]
+        ),
+    )
 
 
 def test_one_buy_many_sells_fifo():
@@ -314,7 +315,7 @@ def test_one_buy_many_sells_fifo():
     assert pnl.cost == 0
     assert pnl.realized == 20
     assert len(pnl.unmatched) == 0
-    assert pnl.matched == [
+    assert pnl.matched == (
         (
             PartialTrade(Trade(10, 101), 5),
             PartialTrade(Trade(-5, 102), -5)
@@ -323,7 +324,7 @@ def test_one_buy_many_sells_fifo():
             PartialTrade(Trade(10, 101), 5),
             PartialTrade(Trade(-5, 104), -5)
         ),
-    ]
+    )
 
 
 def test_pnl():
@@ -366,7 +367,7 @@ def test_many_buys_one_sell_fifo():
     pnl = pnl + Trade(1, 104)
     pnl = pnl + Trade(1, 103)
     pnl = pnl + Trade(-5, 104)
-    assert pnl.matched == [
+    assert pnl.matched == (
         (
             PartialTrade(Trade(1, 100), 1),
             PartialTrade(Trade(-5, 104), -1)
@@ -387,7 +388,7 @@ def test_many_buys_one_sell_fifo():
             PartialTrade(Trade(1, 103), 1),
             PartialTrade(Trade(-5, 104), -1)
         ),
-    ]
+    )
 
 
 def test_many_buys_one_sell_lifo():
