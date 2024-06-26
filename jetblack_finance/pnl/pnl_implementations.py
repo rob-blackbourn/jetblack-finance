@@ -63,7 +63,6 @@ class ABCPnl:
         partial_trade: IPartialTrade,
         quantity: Decimal
     ) -> tuple[IPartialTrade, IPartialTrade]:
-        ...
         assert abs(partial_trade.quantity) >= abs(quantity)
         matched = self.create_partial_trade(partial_trade.trade, quantity)
         unmatched = self.create_partial_trade(partial_trade.trade, partial_trade.quantity - quantity)
