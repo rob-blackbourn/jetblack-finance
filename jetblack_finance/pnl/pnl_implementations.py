@@ -6,11 +6,11 @@ from abc import abstractmethod
 from decimal import Decimal
 from typing import Any, Sequence
 
-from .trade import ITrade, Number
-from .split_trade import SplitTrade, ISplitTrade
+from .trade import ITrade
+from .partial_trade import PartialTrade, IPartialTrade
 from .pnl_strip import PnlStrip
 from .pnl_state import PnlState
-from .algorithm import add_split_trade
+from .algorithm import add_partial_trade
 
 
 class ABCPnl:
@@ -31,11 +31,12 @@ class ABCPnl:
 
     def __add__(self, trade: Any) -> ABCPnl:
         assert isinstance(trade, ITrade)
-        split_trade = self.split_trade(trade)
-        state = add_split_trade(
+        split_trade = self.create_partial_trade(trade, trade.quantity)
+        state = add_partial_trade(
             self._pnl_state,
             split_trade,
             self.create_pnl,
+            self.split_partial_trade,
             self.push_unmatched,
             self.pop_unmatched,
             self.push_matched
@@ -50,8 +51,23 @@ class ABCPnl:
         ...
 
     @abstractmethod
-    def split_trade(self, trade: ITrade) -> ISplitTrade:
+    def create_partial_trade(
+        self,
+        trade: ITrade,
+        quantity: Decimal
+    ) -> IPartialTrade:
         ...
+
+    def split_partial_trade(
+        self,
+        partial_trade: IPartialTrade,
+        quantity: Decimal
+    ) -> tuple[IPartialTrade, IPartialTrade]:
+        ...
+        assert abs(partial_trade.quantity) >= abs(quantity)
+        matched = self.create_partial_trade(partial_trade.trade, quantity)
+        unmatched = self.create_partial_trade(partial_trade.trade, partial_trade.quantity - quantity)
+        return matched, unmatched
 
     @abstractmethod
     def create_pnl(self, pnl_state: PnlState) -> PnlState:
@@ -60,25 +76,25 @@ class ABCPnl:
     @abstractmethod
     def pop_unmatched(
             self,
-            unmatched: Sequence[ISplitTrade]
-    ) -> tuple[ISplitTrade, Sequence[ISplitTrade]]:
+            unmatched: Sequence[IPartialTrade]
+    ) -> tuple[IPartialTrade, Sequence[IPartialTrade]]:
         ...
 
     @abstractmethod
     def push_unmatched(
         self,
-        split_trade: ISplitTrade,
-        unmatched: Sequence[ISplitTrade]
-    ) -> Sequence[ISplitTrade]:
+        split_trade: IPartialTrade,
+        unmatched: Sequence[IPartialTrade]
+    ) -> Sequence[IPartialTrade]:
         ...
 
     @abstractmethod
     def push_matched(
             self,
-            opening: ISplitTrade,
-            closing: ISplitTrade,
-            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
+            opening: IPartialTrade,
+            closing: IPartialTrade,
+            matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
+    ) -> Sequence[tuple[IPartialTrade, IPartialTrade]]:
         ...
 
     @property
@@ -94,11 +110,11 @@ class ABCPnl:
         return self._pnl_state.realized
 
     @property
-    def unmatched(self) -> Sequence[ISplitTrade]:
+    def unmatched(self) -> Sequence[IPartialTrade]:
         return self._pnl_state.unmatched
 
     @property
-    def matched(self) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
+    def matched(self) -> Sequence[tuple[IPartialTrade, IPartialTrade]]:
         return self._pnl_state.matched
 
     @property
@@ -107,10 +123,10 @@ class ABCPnl:
             return Decimal(0)
         return -self.cost / self.quantity
 
-    def unrealized(self, price: Number) -> Decimal:
+    def unrealized(self, price: Decimal) -> Decimal:
         return self.quantity * price + self.cost
 
-    def strip(self, price: Number) -> PnlStrip:
+    def strip(self, price: Decimal) -> PnlStrip:
         return PnlStrip(
             self.quantity,
             self.avg_cost,
@@ -131,31 +147,31 @@ class FifoPnl(ABCPnl):
     ) -> FifoPnl:
         return FifoPnl(pnl_state)
 
-    def split_trade(self, trade: ITrade) -> ISplitTrade:
-        return SplitTrade(trade)
+    def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
+        return PartialTrade(trade, quantity)
 
     def create_pnl(self, pnl_state: PnlState) -> PnlState:
         return pnl_state
 
     def pop_unmatched(
             self,
-            unmatched: Sequence[ISplitTrade]
-    ) -> tuple[ISplitTrade, Sequence[ISplitTrade]]:
+            unmatched: Sequence[IPartialTrade]
+    ) -> tuple[IPartialTrade, Sequence[IPartialTrade]]:
         return unmatched[0], unmatched[1:]
 
     def push_unmatched(
             self,
-            split_trade: ISplitTrade,
-            unmatched: Sequence[ISplitTrade]
-    ) -> Sequence[ISplitTrade]:
+            split_trade: IPartialTrade,
+            unmatched: Sequence[IPartialTrade]
+    ) -> Sequence[IPartialTrade]:
         return [split_trade] + list(unmatched)
 
     def push_matched(
             self,
-            opening: ISplitTrade,
-            closing: ISplitTrade,
-            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
+            opening: IPartialTrade,
+            closing: IPartialTrade,
+            matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
+    ) -> Sequence[tuple[IPartialTrade, IPartialTrade]]:
         matched_trade = (opening, closing)
         return list(matched) + [matched_trade]
 
@@ -168,31 +184,31 @@ class LifoPnl(ABCPnl):
     ) -> LifoPnl:
         return LifoPnl(pnl_state)
 
-    def split_trade(self, trade: ITrade) -> ISplitTrade:
-        return SplitTrade(trade)
+    def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
+        return PartialTrade(trade, quantity)
 
     def create_pnl(self, pnl_state: PnlState) -> PnlState:
         return pnl_state
 
     def pop_unmatched(
             self,
-            unmatched: Sequence[ISplitTrade]
-    ) -> tuple[ISplitTrade, Sequence[ISplitTrade]]:
+            unmatched: Sequence[IPartialTrade]
+    ) -> tuple[IPartialTrade, Sequence[IPartialTrade]]:
         return unmatched[-1], unmatched[:-1]
 
     def push_unmatched(
             self,
-            split_trade: ISplitTrade,
-            unmatched: Sequence[ISplitTrade]
-    ) -> Sequence[ISplitTrade]:
+            split_trade: IPartialTrade,
+            unmatched: Sequence[IPartialTrade]
+    ) -> Sequence[IPartialTrade]:
         return list(unmatched) + [split_trade]
 
     def push_matched(
             self,
-            opening: ISplitTrade,
-            closing: ISplitTrade,
-            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
+            opening: IPartialTrade,
+            closing: IPartialTrade,
+            matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
+    ) -> Sequence[tuple[IPartialTrade, IPartialTrade]]:
         return list(matched) + [(opening, closing)]
 
 
@@ -204,16 +220,16 @@ class BestPricePnl(ABCPnl):
     ) -> BestPricePnl:
         return BestPricePnl(pnl_state)
 
-    def split_trade(self, trade: ITrade) -> ISplitTrade:
-        return SplitTrade(trade)
+    def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
+        return PartialTrade(trade, quantity)
 
     def create_pnl(self, pnl_state: PnlState) -> PnlState:
         return pnl_state
 
     def pop_unmatched(
             self,
-            unmatched: Sequence[ISplitTrade]
-    ) -> tuple[ISplitTrade, Sequence[ISplitTrade]]:
+            unmatched: Sequence[IPartialTrade]
+    ) -> tuple[IPartialTrade, Sequence[IPartialTrade]]:
         orders = sorted(unmatched, key=lambda x: x.price)
         order, orders = (
             (orders[0], orders[1:])
@@ -224,17 +240,17 @@ class BestPricePnl(ABCPnl):
 
     def push_unmatched(
             self,
-            split_trade: ISplitTrade,
-            unmatched: Sequence[ISplitTrade]
-    ) -> Sequence[ISplitTrade]:
+            split_trade: IPartialTrade,
+            unmatched: Sequence[IPartialTrade]
+    ) -> Sequence[IPartialTrade]:
         return list(unmatched) + [split_trade]
 
     def push_matched(
             self,
-            opening: ISplitTrade,
-            closing: ISplitTrade,
-            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
+            opening: IPartialTrade,
+            closing: IPartialTrade,
+            matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
+    ) -> Sequence[tuple[IPartialTrade, IPartialTrade]]:
         return list(matched) + [(opening, closing)]
 
 
@@ -246,16 +262,16 @@ class WorstPricePnl(ABCPnl):
     ) -> WorstPricePnl:
         return WorstPricePnl(pnl_state)
 
-    def split_trade(self, trade: ITrade) -> ISplitTrade:
-        return SplitTrade(trade)
+    def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
+        return PartialTrade(trade, quantity)
 
     def create_pnl(self, pnl_state: PnlState) -> PnlState:
         return pnl_state
 
     def pop_unmatched(
             self,
-            unmatched: Sequence[ISplitTrade]
-    ) -> tuple[ISplitTrade, Sequence[ISplitTrade]]:
+            unmatched: Sequence[IPartialTrade]
+    ) -> tuple[IPartialTrade, Sequence[IPartialTrade]]:
         orders = sorted(unmatched, key=lambda x: x.price)
         order, orders = (
             (orders[-1], orders[:-1])
@@ -266,15 +282,15 @@ class WorstPricePnl(ABCPnl):
 
     def push_unmatched(
             self,
-            split_trade: ISplitTrade,
-            unmatched: Sequence[ISplitTrade]
-    ) -> Sequence[ISplitTrade]:
+            split_trade: IPartialTrade,
+            unmatched: Sequence[IPartialTrade]
+    ) -> Sequence[IPartialTrade]:
         return list(unmatched) + [split_trade]
 
     def push_matched(
             self,
-            opening: ISplitTrade,
-            closing: ISplitTrade,
-            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
+            opening: IPartialTrade,
+            closing: IPartialTrade,
+            matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
+    ) -> Sequence[tuple[IPartialTrade, IPartialTrade]]:
         return list(matched) + [(opening, closing)]

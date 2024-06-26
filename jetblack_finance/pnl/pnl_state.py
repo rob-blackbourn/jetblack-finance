@@ -3,15 +3,15 @@
 from decimal import Decimal
 from typing import Protocol, Sequence
 
-from .split_trade import ISplitTrade
+from .partial_trade import IPartialTrade
 
 
 class IPnlState(Protocol):
     quantity: Decimal
     cost: Decimal
     realized: Decimal
-    unmatched: Sequence[ISplitTrade]
-    matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
+    unmatched: Sequence[IPartialTrade]
+    matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
 
 
 class PnlState:
@@ -21,8 +21,8 @@ class PnlState:
             quantity: Decimal,
             cost: Decimal,
             realized: Decimal,
-            unmatched: Sequence[ISplitTrade],
-            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
+            unmatched: Sequence[IPartialTrade],
+            matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
     ) -> None:
         self.quantity = quantity
         self.cost = cost

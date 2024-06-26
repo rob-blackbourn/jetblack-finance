@@ -1,4 +1,4 @@
-"""A scaled trade"""
+"""A partial trade"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import Protocol
 from .trade import ITrade
 
 
-class ISplitTrade(Protocol):
+class IPartialTrade(Protocol):
 
     @property
     @abstractmethod
@@ -27,23 +27,15 @@ class ISplitTrade(Protocol):
     def price(self) -> Decimal:
         ...
 
-    @abstractmethod
-    def split(self, quantity: Decimal) -> tuple[ISplitTrade, ISplitTrade]:
-        ...
-
-class SplitTrade(ISplitTrade):
+class PartialTrade(IPartialTrade):
 
     def __init__(
             self,
             trade: ITrade,
-            quantity: Decimal | None = None,
+            quantity: Decimal
     ) -> None:
         self._trade = trade
-        self._quantity: Decimal = (
-            quantity
-            if quantity is not None
-            else trade.quantity
-        )
+        self._quantity = quantity
 
     @property
     def trade(self) -> ITrade:
@@ -57,15 +49,9 @@ class SplitTrade(ISplitTrade):
     def price(self) -> Decimal:
         return self._trade.price
 
-    def split(self, quantity: Decimal) -> tuple[SplitTrade, SplitTrade]:
-        assert abs(self.quantity) >= abs(quantity)
-        matched = SplitTrade(self.trade, quantity)
-        unmatched = SplitTrade(self.trade, self.quantity - quantity)
-        return matched, unmatched
-
     def __eq__(self, value: object) -> bool:
         return (
-            isinstance(value, SplitTrade) and
+            isinstance(value, PartialTrade) and
             self._trade == value._trade and
             self.quantity == value.quantity
         )

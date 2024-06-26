@@ -8,7 +8,7 @@ from jetblack_finance.pnl import (
     BestPricePnl,
     WorstPricePnl,
     Trade,
-    SplitTrade,
+    PartialTrade,
 )
 
 
@@ -171,8 +171,8 @@ def test_long_to_short_fifo_with_profit():
     assert len(pnl.unmatched) == 0
     assert pnl.matched == [
         (
-            SplitTrade(Trade(1, 100)),
-            SplitTrade(Trade(-1, 102))
+            PartialTrade(Trade(1, 100), 1),
+            PartialTrade(Trade(-1, 102), -1)
         )
     ]
 
@@ -190,8 +190,8 @@ def test_short_to_long_fifo_with_profit():
     assert len(pnl.unmatched) == 0
     assert pnl.matched == [
         (
-            SplitTrade(Trade(-1, 102)),
-            SplitTrade(Trade(1, 100))
+            PartialTrade(Trade(-1, 102), -1),
+            PartialTrade(Trade(1, 100), 1)
         )
     ]
 
@@ -209,8 +209,8 @@ def test_long_to_short_fifo_with_loss():
     assert len(pnl.unmatched) == 0
     assert pnl.matched == [
         (
-            SplitTrade(Trade(1, 102)),
-            SplitTrade(Trade(-1, 100))
+            PartialTrade(Trade(1, 102), 1),
+            PartialTrade(Trade(-1, 100), -1)
         )
     ]
 
@@ -228,8 +228,8 @@ def test_short_to_long_fifo_with_loss():
     assert len(pnl.unmatched) == 0
     assert pnl.matched == [
         (
-            SplitTrade(Trade(-1, 100)),
-            SplitTrade(Trade(1, 102))
+            PartialTrade(Trade(-1, 100), -1),
+            PartialTrade(Trade(1, 102), 1)
         )
     ]
 
@@ -244,12 +244,12 @@ def test_long_sell_fifo_through_flat():
     assert pnl.cost == 102
     assert pnl.realized == 1
     assert list(pnl.unmatched) == [
-        SplitTrade(Trade(-2, 102), -1)
+        PartialTrade(Trade(-2, 102), -1)
     ]
     assert pnl.matched == [
         (
-            SplitTrade(Trade(1, 101), 1),
-            SplitTrade(Trade(-2, 102), -1)
+            PartialTrade(Trade(1, 101), 1),
+            PartialTrade(Trade(-2, 102), -1)
         )
     ]
 
@@ -264,12 +264,12 @@ def test_short_buy_fifo_through_flat():
     assert pnl.cost == -101
     assert pnl.realized == 1
     assert list(pnl.unmatched) == [
-        SplitTrade(Trade(2, 101), 1)
+        PartialTrade(Trade(2, 101), 1)
     ]
     assert pnl.matched == [
         (
-            SplitTrade(Trade(-1, 102), -1),
-            SplitTrade(Trade(2, 101), 1)
+            PartialTrade(Trade(-1, 102), -1),
+            PartialTrade(Trade(2, 101), 1)
         )
     ]
 
@@ -290,12 +290,12 @@ def test_one_buy_many_sells_fifo():
     assert len(pnl.unmatched) == 0
     assert pnl.matched == [
         (
-            SplitTrade(Trade(10, 101), 5),
-            SplitTrade(Trade(-5, 102), -5)
+            PartialTrade(Trade(10, 101), 5),
+            PartialTrade(Trade(-5, 102), -5)
         ),
         (
-            SplitTrade(Trade(10, 101), 5),
-            SplitTrade(Trade(-5, 104), -5)
+            PartialTrade(Trade(10, 101), 5),
+            PartialTrade(Trade(-5, 104), -5)
         ),
     ]
 
@@ -342,24 +342,24 @@ def test_many_buys_one_sell_fifo():
     pnl = pnl + Trade(-5, 104)
     assert pnl.matched == [
         (
-            SplitTrade(Trade(1, 100), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 100), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 102), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 102), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 101), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 101), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 104), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 104), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 103), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 103), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
     ]
 
@@ -376,24 +376,24 @@ def test_many_buys_one_sell_lifo():
     pnl = pnl + Trade(-5, 104)
     assert pnl.matched == [
         (
-            SplitTrade(Trade(1, 103), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 103), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 104), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 104), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 101), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 101), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 102), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 102), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 100), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 100), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
     ]
 
@@ -410,24 +410,24 @@ def test_many_buys_one_sell_best_price():
     pnl = pnl + Trade(-5, 104)
     assert pnl.matched == [
         (
-            SplitTrade(Trade(1, 100), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 100), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 101), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 101), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 102), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 102), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 103), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 103), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 104), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 104), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
     ]
 
@@ -444,24 +444,24 @@ def test_many_sells_one_buy_best_price():
     pnl = pnl + Trade(5, 104)
     assert pnl.matched == [
         (
-            SplitTrade(Trade(-1, 104), -1),
-            SplitTrade(Trade(5, 104), 1)
+            PartialTrade(Trade(-1, 104), -1),
+            PartialTrade(Trade(5, 104), 1)
         ),
         (
-            SplitTrade(Trade(-1, 103), -1),
-            SplitTrade(Trade(5, 104), 1)
+            PartialTrade(Trade(-1, 103), -1),
+            PartialTrade(Trade(5, 104), 1)
         ),
         (
-            SplitTrade(Trade(-1, 102), -1),
-            SplitTrade(Trade(5, 104), 1)
+            PartialTrade(Trade(-1, 102), -1),
+            PartialTrade(Trade(5, 104), 1)
         ),
         (
-            SplitTrade(Trade(-1, 101), -1),
-            SplitTrade(Trade(5, 104), 1)
+            PartialTrade(Trade(-1, 101), -1),
+            PartialTrade(Trade(5, 104), 1)
         ),
         (
-            SplitTrade(Trade(-1, 100), -1),
-            SplitTrade(Trade(5, 104), 1)
+            PartialTrade(Trade(-1, 100), -1),
+            PartialTrade(Trade(5, 104), 1)
         ),
     ]
 
@@ -478,24 +478,24 @@ def test_many_buys_one_sell_worst_price():
     pnl = pnl + Trade(-5, 104)
     assert pnl.matched == [
         (
-            SplitTrade(Trade(1, 104), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 104), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 103), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 103), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 102), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 102), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 101), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 101), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
         (
-            SplitTrade(Trade(1, 100), 1),
-            SplitTrade(Trade(-5, 104), -1)
+            PartialTrade(Trade(1, 100), 1),
+            PartialTrade(Trade(-5, 104), -1)
         ),
     ]
 
@@ -512,24 +512,24 @@ def test_many_sells_one_buy_worst_price():
     pnl = pnl + Trade(5, 104)
     assert pnl.matched == [
         (
-            SplitTrade(Trade(-1, 100), -1),
-            SplitTrade(Trade(5, 104), 1)
+            PartialTrade(Trade(-1, 100), -1),
+            PartialTrade(Trade(5, 104), 1)
         ),
         (
-            SplitTrade(Trade(-1, 101), -1),
-            SplitTrade(Trade(5, 104), 1)
+            PartialTrade(Trade(-1, 101), -1),
+            PartialTrade(Trade(5, 104), 1)
         ),
         (
-            SplitTrade(Trade(-1, 102), -1),
-            SplitTrade(Trade(5, 104), 1)
+            PartialTrade(Trade(-1, 102), -1),
+            PartialTrade(Trade(5, 104), 1)
         ),
         (
-            SplitTrade(Trade(-1, 103), -1),
-            SplitTrade(Trade(5, 104), 1)
+            PartialTrade(Trade(-1, 103), -1),
+            PartialTrade(Trade(5, 104), 1)
         ),
         (
-            SplitTrade(Trade(-1, 104), -1),
-            SplitTrade(Trade(5, 104), 1)
+            PartialTrade(Trade(-1, 104), -1),
+            PartialTrade(Trade(5, 104), 1)
         ),
     ]
 

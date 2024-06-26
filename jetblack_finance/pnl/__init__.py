@@ -8,7 +8,7 @@ from .pnl_implementations import (
     WorstPricePnl,
 )
 from .pnl_state import IPnlState, PnlState
-from .split_trade import ISplitTrade, SplitTrade
+from .partial_trade import IPartialTrade, PartialTrade
 from .trade import ITrade, Trade
 
 __all__ = [
@@ -21,6 +21,6 @@ __all__ = [
     'BestPricePnl',
     'WorstPricePnl',
 
-    'ISplitTrade',
-    'SplitTrade'
+    'IPartialTrade',
+    'PartialTrade',
 ]
