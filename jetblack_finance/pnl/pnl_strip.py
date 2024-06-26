@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import NamedTuple, Union
 
 
-class OrderPnlStrip(NamedTuple):
+class PnlStrip(NamedTuple):
     quantity: Decimal
     avg_cost: Decimal
     price: Union[Decimal, int]
