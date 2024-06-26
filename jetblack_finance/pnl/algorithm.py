@@ -62,13 +62,19 @@ def _extend_position(
         partial_trade: IPartialTrade,
         create_pnl_state: CreatePnlState
 ) -> PnlState:
+    quantity = pnl_state.quantity + partial_trade.quantity
+    cost = pnl_state.cost - partial_trade.quantity * partial_trade.price
+    realized = pnl_state.realized
+    unmatched = tuple((*pnl_state.unmatched, partial_trade))
+    matched = pnl_state.matched
+
     return create_pnl_state(
         PnlState(
-            pnl_state.quantity + partial_trade.quantity,
-            pnl_state.cost - partial_trade.quantity * partial_trade.price,
-            pnl_state.realized,
-            list(pnl_state.unmatched) + [partial_trade],
-            list(pnl_state.matched)
+            quantity,
+            cost,
+            realized,
+            unmatched,
+            matched
         )
     )
 
