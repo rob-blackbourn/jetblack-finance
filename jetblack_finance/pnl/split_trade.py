@@ -14,6 +14,11 @@ class ISplitTrade(Protocol):
 
     @property
     @abstractmethod
+    def trade(self) -> ITrade:
+        ...
+
+    @property
+    @abstractmethod
     def quantity(self) -> Decimal:
         ...
 
@@ -25,7 +30,6 @@ class ISplitTrade(Protocol):
     @abstractmethod
     def split(self, quantity: Decimal) -> tuple[ISplitTrade, ISplitTrade]:
         ...
-
 
 class SplitTrade(ISplitTrade):
 
@@ -42,6 +46,10 @@ class SplitTrade(ISplitTrade):
         )
 
     @property
+    def trade(self) -> ITrade:
+        return self._trade
+
+    @property
     def quantity(self) -> Decimal:
         return self._quantity
 
@@ -51,8 +59,8 @@ class SplitTrade(ISplitTrade):
 
     def split(self, quantity: Decimal) -> tuple[SplitTrade, SplitTrade]:
         assert abs(self.quantity) >= abs(quantity)
-        matched = SplitTrade(self._trade, quantity)
-        unmatched = SplitTrade(self._trade, self.quantity - quantity)
+        matched = SplitTrade(self.trade, quantity)
+        unmatched = SplitTrade(self.trade, self.quantity - quantity)
         return matched, unmatched
 
     def __eq__(self, value: object) -> bool:
