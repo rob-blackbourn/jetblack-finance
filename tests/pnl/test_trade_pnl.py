@@ -87,11 +87,8 @@ def test_long_to_short_with_splits_worst_price():
     """long to short, splits, worst price"""
 
     pnl = WorstPricePnl(
-        0,
-        0,
-        0,
-        WorstPricePnl.UnmatchedPool(),
-        WorstPricePnl.MatchedPool()
+        0, 0, 0,
+        WorstPricePnl.UnmatchedPool(), WorstPricePnl.MatchedPool()
     )
 
     assert pnl.quantity == 0
@@ -128,11 +125,8 @@ def test_long_to_short_with_splits_fifo():
     """long to short, splits, fifo"""
 
     pnl = FifoPnl(
-        0,
-        0,
-        0,
-        FifoPnl.UnmatchedPool(),
-        FifoPnl.MatchedPool()
+        0, 0, 0,
+        FifoPnl.UnmatchedPool(), FifoPnl.MatchedPool()
     )
 
     assert pnl.quantity == 0
@@ -443,8 +437,10 @@ def test_many_buys_one_sell_lifo():
 
 def test_many_buys_one_sell_best_price():
 
-    pnl = BestPricePnl(0, 0, 0, BestPricePnl.UnmatchedPool(),
-                       BestPricePnl.MatchedPool())
+    pnl = BestPricePnl(
+        0, 0, 0,
+        BestPricePnl.UnmatchedPool(), BestPricePnl.MatchedPool()
+    )
 
     pnl = pnl + Trade(1, 100)
     pnl = pnl + Trade(1, 102)
@@ -479,11 +475,8 @@ def test_many_buys_one_sell_best_price():
 def test_many_sells_one_buy_best_price():
 
     pnl = BestPricePnl(
-        0,
-        0,
-        0,
-        BestPricePnl.UnmatchedPool(),
-        BestPricePnl.MatchedPool()
+        0, 0, 0,
+        BestPricePnl.UnmatchedPool(), BestPricePnl.MatchedPool()
     )
 
     pnl = pnl + Trade(-1, 100)
@@ -521,8 +514,10 @@ def test_many_sells_one_buy_best_price():
 
 def test_many_buys_one_sell_worst_price():
 
-    pnl = WorstPricePnl(0, 0, 0, WorstPricePnl.UnmatchedPool(),
-                        WorstPricePnl.MatchedPool())
+    pnl = WorstPricePnl(
+        0, 0, 0,
+        WorstPricePnl.UnmatchedPool(), WorstPricePnl.MatchedPool()
+    )
 
     pnl = pnl + Trade(1, 100)
     pnl = pnl + Trade(1, 102)
@@ -560,11 +555,8 @@ def test_many_buys_one_sell_worst_price():
 def test_many_sells_one_buy_worst_price():
 
     pnl = WorstPricePnl(
-        0,
-        0,
-        0,
-        WorstPricePnl.UnmatchedPool(),
-        WorstPricePnl.MatchedPool()
+        0, 0, 0,
+        WorstPricePnl.UnmatchedPool(), WorstPricePnl.MatchedPool()
     )
 
     pnl = pnl + Trade(-1, 100)
