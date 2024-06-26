@@ -134,18 +134,6 @@ CreatePnlState = Callable[
     ],
     IPnlState
 ]
-PushUnmatched = Callable[
-    [IPartialTrade, Sequence[IPartialTrade]],
-    Sequence[IPartialTrade]
-]
-PopUnmatched = Callable[
-    [Sequence[IPartialTrade]],
-    tuple[IPartialTrade, Sequence[IPartialTrade]]
-]
-PushMatched = Callable[
-    [IPartialTrade, IPartialTrade, Sequence[tuple[IPartialTrade, IPartialTrade]]],
-    Sequence[tuple[IPartialTrade, IPartialTrade]]
-]
 CreatePartialTrade = Callable[[ITrade, Decimal], IPartialTrade]
 
 
