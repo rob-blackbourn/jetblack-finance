@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from decimal import Decimal
-from typing import Any, Optional, Sequence, Tuple, Union
+from typing import Any, Sequence, Union
 
 from .trade import ITrade
 from .split_trade import SplitTrade, ISplitTrade
@@ -17,7 +17,7 @@ class ABCPnl:
 
     def __init__(
         self,
-        pnl_state: Optional[PnlState] = None,
+        pnl_state: PnlState | None = None,
     ) -> None:
         if pnl_state is None:
             pnl_state = PnlState(
@@ -77,8 +77,8 @@ class ABCPnl:
             self,
             opening: ISplitTrade,
             closing: ISplitTrade,
-            matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[Tuple[ISplitTrade, ISplitTrade]]:
+            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
+    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
         ...
 
     @property
@@ -98,7 +98,7 @@ class ABCPnl:
         return self._pnl_state.unmatched
 
     @property
-    def matched(self) -> Sequence[Tuple[ISplitTrade, ISplitTrade]]:
+    def matched(self) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
         return self._pnl_state.matched
 
     @property
@@ -154,8 +154,8 @@ class FifoPnl(ABCPnl):
             self,
             opening: ISplitTrade,
             closing: ISplitTrade,
-            matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[Tuple[ISplitTrade, ISplitTrade]]:
+            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
+    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
         matched_trade = (opening, closing)
         return list(matched) + [matched_trade]
 
@@ -191,8 +191,8 @@ class LifoPnl(ABCPnl):
             self,
             opening: ISplitTrade,
             closing: ISplitTrade,
-            matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[Tuple[ISplitTrade, ISplitTrade]]:
+            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
+    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
         return list(matched) + [(opening, closing)]
 
 
@@ -213,7 +213,7 @@ class BestPricePnl(ABCPnl):
     def pop_unmatched(
             self,
             unmatched: Sequence[ISplitTrade]
-    ) -> Tuple[ISplitTrade, Sequence[ISplitTrade]]:
+    ) -> tuple[ISplitTrade, Sequence[ISplitTrade]]:
         orders = sorted(unmatched, key=lambda x: x.price)
         order, orders = (
             (orders[0], orders[1:])
@@ -233,8 +233,8 @@ class BestPricePnl(ABCPnl):
             self,
             opening: ISplitTrade,
             closing: ISplitTrade,
-            matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[Tuple[ISplitTrade, ISplitTrade]]:
+            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
+    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
         return list(matched) + [(opening, closing)]
 
 
@@ -275,6 +275,6 @@ class WorstPricePnl(ABCPnl):
             self,
             opening: ISplitTrade,
             closing: ISplitTrade,
-            matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[Tuple[ISplitTrade, ISplitTrade]]:
+            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
+    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
         return list(matched) + [(opening, closing)]

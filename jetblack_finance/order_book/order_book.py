@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Sequence
 
 from .abstract_types import AbstractOrderBook, PluginFactory
 from .aggregate_order import AggregateOrder
@@ -51,8 +51,8 @@ class OrderBook(AbstractOrderBook):
 
     def depth(
             self,
-            levels: Optional[int]
-    ) -> Tuple[Sequence[AggregateOrder], Sequence[AggregateOrder]]:
+            levels: int | None
+    ) -> tuple[Sequence[AggregateOrder], Sequence[AggregateOrder]]:
         return self._manager.depth(levels)
 
     def add_order(
@@ -61,7 +61,7 @@ class OrderBook(AbstractOrderBook):
             price: Decimal,
             size: int,
             style: Style
-    ) -> Tuple[Optional[int], List[Fill], List[int]]:
+    ) -> tuple[int | None, List[Fill], List[int]]:
         return self._manager.add_order(side, price, size, style)
 
     def amend_order(self, order_id: int, size: int) -> None:

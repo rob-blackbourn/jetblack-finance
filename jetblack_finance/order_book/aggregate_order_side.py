@@ -2,7 +2,7 @@
 
 from collections import deque
 from itertools import islice
-from typing import Deque, Sequence, Optional
+from typing import Deque, Sequence
 
 from .aggregate_order import AggregateOrder
 from .order import Order
@@ -25,11 +25,11 @@ class AggregateOrderSide:
         self._low_is_best = low_is_best
         self._orders: Deque[AggregateOrder] = deque()
 
-    def depth(self, levels: Optional[int]) -> Sequence[AggregateOrder]:
+    def depth(self, levels: int | None) -> Sequence[AggregateOrder]:
         """Return the orders for the side.
 
         Args:
-            levels (Optional[int]): The market depth to return.
+            levels (int | None): The market depth to return.
 
         Returns:
             Sequence[AggregateOrder]: The orders.

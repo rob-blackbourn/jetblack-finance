@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from decimal import Decimal
-from typing import Tuple, Optional, Protocol
+from typing import Protocol
 
 
 from .trade import ITrade
@@ -23,7 +23,7 @@ class ISplitTrade(Protocol):
         ...
 
     @abstractmethod
-    def split(self, quantity: Decimal) -> Tuple[ISplitTrade, ISplitTrade]:
+    def split(self, quantity: Decimal) -> tuple[ISplitTrade, ISplitTrade]:
         ...
 
 
@@ -32,7 +32,7 @@ class SplitTrade(ISplitTrade):
     def __init__(
             self,
             trade: ITrade,
-            used: Optional[Decimal] = None,
+            used: Decimal | None = None,
     ) -> None:
         self._trade = trade
         self._used: Decimal = (
@@ -49,7 +49,7 @@ class SplitTrade(ISplitTrade):
     def price(self) -> Decimal:
         return self._trade.price
 
-    def split(self, quantity: Decimal) -> Tuple[SplitTrade, SplitTrade]:
+    def split(self, quantity: Decimal) -> tuple[SplitTrade, SplitTrade]:
         assert abs(self.quantity) >= abs(quantity)
         unused = self.quantity - quantity
         matched = SplitTrade(self._trade, self._used + unused)

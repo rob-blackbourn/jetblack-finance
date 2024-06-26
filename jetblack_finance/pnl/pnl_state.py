@@ -1,7 +1,7 @@
 """A class representing the state of the P&L calculation"""
 
 from decimal import Decimal
-from typing import Protocol, Sequence, Tuple
+from typing import Protocol, Sequence
 
 from .split_trade import ISplitTrade
 
@@ -11,7 +11,7 @@ class IPnlState(Protocol):
     cost: Decimal
     realized: Decimal
     unmatched: Sequence[ISplitTrade]
-    matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
+    matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
 
 
 class PnlState:
@@ -22,7 +22,7 @@ class PnlState:
             cost: Decimal,
             realized: Decimal,
             unmatched: Sequence[ISplitTrade],
-            matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
+            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
     ) -> None:
         self.quantity = quantity
         self.cost = cost

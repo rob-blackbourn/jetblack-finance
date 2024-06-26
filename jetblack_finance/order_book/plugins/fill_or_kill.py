@@ -8,7 +8,7 @@ completely filled.
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence
+from typing import List, Sequence
 
 from ..abstract_types import (
     AbstractOrderBookManager,
@@ -59,7 +59,7 @@ class FillOrKillPlugin(Plugin):
             cls,
             order1: AggregateOrder,
             order2: AggregateOrder,
-    ) -> Optional[Order]:
+    ) -> Order | None:
         if cls._should_cancel(order1.first, order2.first):
             return order1.first
 

@@ -90,7 +90,7 @@ The order books have three main methods:
   * `amend_limit_order`
   * `cancel_limit_order`
 
-##### add_limit_order(side: Side, price: Decimal, size: int, style: Style) -> Tuple[Optional[int], List[Fill], List[int]]
+##### add_limit_order(side: Side, price: Decimal, size: int, style: Style) -> tuple[int | None, List[Fill], List[int]]
 
 Adding a limit order produces a tuple of three values:
 

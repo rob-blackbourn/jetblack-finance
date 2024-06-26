@@ -1,7 +1,7 @@
 """Trade state"""
 
 from abc import abstractmethod
-from typing import NamedTuple, Sequence, Tuple
+from typing import NamedTuple, Sequence
 
 from .split_trade import ISplitTrade
 
@@ -10,7 +10,7 @@ class TradeState(NamedTuple):
 
     unmatched: Sequence[ISplitTrade]
 
-    matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
+    matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
 
     @abstractmethod
     def _push_unmatched(
@@ -32,6 +32,6 @@ class TradeState(NamedTuple):
             self,
             opening: ISplitTrade,
             closing: ISplitTrade,
-            matched: Sequence[Tuple[ISplitTrade, ISplitTrade]]
-    ) -> Sequence[Tuple[ISplitTrade, ISplitTrade]]:
+            matched: Sequence[tuple[ISplitTrade, ISplitTrade]]
+    ) -> Sequence[tuple[ISplitTrade, ISplitTrade]]:
         ...
