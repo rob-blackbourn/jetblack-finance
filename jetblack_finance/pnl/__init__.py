@@ -7,7 +7,7 @@ from .pnl_implementations import (
     BestPricePnl,
     WorstPricePnl,
 )
-from .pnl_state import IPnlState, PnlState
+from .pnl_state import IPnlState
 from .partial_trade import IPartialTrade, PartialTrade
 from .trade import ITrade, Trade
 

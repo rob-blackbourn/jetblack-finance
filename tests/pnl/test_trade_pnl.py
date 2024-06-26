@@ -15,7 +15,7 @@ from jetblack_finance.pnl import (
 def test_long_to_short_with_splits_best_price():
     """long to short, splits, best price"""
 
-    pnl = BestPricePnl()
+    pnl = BestPricePnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     assert pnl.quantity == 0
     assert pnl.cost == 0
@@ -56,7 +56,7 @@ def test_long_to_short_with_splits_best_price():
 def test_long_to_short_with_splits_worst_price():
     """long to short, splits, worst price"""
 
-    pnl = WorstPricePnl()
+    pnl = WorstPricePnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     assert pnl.quantity == 0
     assert pnl.cost == 0
@@ -91,7 +91,7 @@ def test_long_to_short_with_splits_worst_price():
 def test_long_to_short_with_splits_fifo():
     """long to short, splits, fifo"""
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     assert pnl.quantity == 0
     assert pnl.cost == 0
@@ -126,7 +126,7 @@ def test_long_to_short_with_splits_fifo():
 def test_long_to_short_with_splits_lifo():
     """long to short, splits, fifo"""
 
-    pnl = LifoPnl()
+    pnl = LifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     assert pnl.quantity == 0
     assert pnl.cost == 0
@@ -161,7 +161,7 @@ def test_long_to_short_with_splits_lifo():
 def test_long_to_short_fifo_with_profit():
     """Buy 1 @ 100, then sell 1 @ 102 making 2"""
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(1, 100)
     pnl = pnl + Trade(-1, 102)
@@ -180,7 +180,7 @@ def test_long_to_short_fifo_with_profit():
 def test_short_to_long_fifo_with_profit():
     """Sell 1 @ 102, then buy back 1 @ 101 making 2"""
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(-1, 102)
     pnl = pnl + Trade(1, 100)
@@ -199,7 +199,7 @@ def test_short_to_long_fifo_with_profit():
 def test_long_to_short_fifo_with_loss():
     """Buy 1 @ 102, then sell 1 @ 100 loosing 2"""
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(1, 102)
     pnl = pnl + Trade(-1, 100)
@@ -218,7 +218,7 @@ def test_long_to_short_fifo_with_loss():
 def test_short_to_long_fifo_with_loss():
     """Sell 1 @ 100, then buy back 1 @ 102 loosing 2"""
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(-1, 100)
     pnl = pnl + Trade(1, 102)
@@ -236,7 +236,7 @@ def test_short_to_long_fifo_with_loss():
 
 def test_long_sell_fifo_through_flat():
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(1, 101)
     pnl = pnl + Trade(-2, 102)
@@ -256,7 +256,7 @@ def test_long_sell_fifo_through_flat():
 
 def test_short_buy_fifo_through_flat():
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(-1, 102)
     pnl = pnl + Trade(2, 101)
@@ -276,7 +276,7 @@ def test_short_buy_fifo_through_flat():
 
 def test_one_buy_many_sells_fifo():
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(10, 101)
     pnl = pnl + Trade(-5, 102)
@@ -302,7 +302,7 @@ def test_one_buy_many_sells_fifo():
 
 def test_pnl():
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     # Buy 10 @ 100
     pnl = pnl + Trade(10, 100)
@@ -332,7 +332,7 @@ def test_pnl():
 
 def test_many_buys_one_sell_fifo():
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(1, 100)
     pnl = pnl + Trade(1, 102)
@@ -366,7 +366,7 @@ def test_many_buys_one_sell_fifo():
 
 def test_many_buys_one_sell_lifo():
 
-    pnl = LifoPnl()
+    pnl = LifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(1, 100)
     pnl = pnl + Trade(1, 102)
@@ -400,7 +400,7 @@ def test_many_buys_one_sell_lifo():
 
 def test_many_buys_one_sell_best_price():
 
-    pnl = BestPricePnl()
+    pnl = BestPricePnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(1, 100)
     pnl = pnl + Trade(1, 102)
@@ -434,7 +434,7 @@ def test_many_buys_one_sell_best_price():
 
 def test_many_sells_one_buy_best_price():
 
-    pnl = BestPricePnl()
+    pnl = BestPricePnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(-1, 100)
     pnl = pnl + Trade(-1, 102)
@@ -468,7 +468,7 @@ def test_many_sells_one_buy_best_price():
 
 def test_many_buys_one_sell_worst_price():
 
-    pnl = WorstPricePnl()
+    pnl = WorstPricePnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(1, 100)
     pnl = pnl + Trade(1, 102)
@@ -502,7 +502,7 @@ def test_many_buys_one_sell_worst_price():
 
 def test_many_sells_one_buy_worst_price():
 
-    pnl = WorstPricePnl()
+    pnl = WorstPricePnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(-1, 100)
     pnl = pnl + Trade(-1, 102)
@@ -536,7 +536,7 @@ def test_many_sells_one_buy_worst_price():
 
 def test_fraction_quantities():
 
-    pnl = FifoPnl()
+    pnl = FifoPnl(Decimal(0), Decimal(0), Decimal(0), (), ())
 
     pnl = pnl + Trade(Decimal("10.17"), Decimal("2.54"))
     pnl = pnl + Trade(Decimal("-8.17"), Decimal("2.12"))

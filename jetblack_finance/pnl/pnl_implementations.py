@@ -4,35 +4,37 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from decimal import Decimal
-from typing import Any, Sequence
+from typing import Any, Generic, Sequence, TypeVar, cast
 
 from .trade import ITrade
 from .partial_trade import PartialTrade, IPartialTrade
 from .pnl_strip import PnlStrip
-from .pnl_state import PnlState
+from .pnl_state import IPnlState
 from .algorithm import add_trade
 
+T = TypeVar('T', bound='ABCPnl')
 
-class ABCPnl:
+
+class ABCPnl(IPnlState, Generic[T]):
 
     def __init__(
-        self,
-        pnl_state: PnlState | None = None,
+            self,
+            quantity: Decimal,
+            cost: Decimal,
+            realized: Decimal,
+            unmatched: Sequence[IPartialTrade],
+            matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
     ) -> None:
-        if pnl_state is None:
-            pnl_state = PnlState(
-                Decimal(0),
-                Decimal(0),
-                Decimal(0),
-                (),
-                (),
-            )
-        self._pnl_state = pnl_state
+        self._quantity = quantity
+        self._cost = cost
+        self._realized = realized
+        self._unmatched = unmatched
+        self._matched = matched
 
-    def __add__(self, trade: Any) -> ABCPnl:
+    def __add__(self, trade: Any) -> T:
         assert isinstance(trade, ITrade)
         state = add_trade(
-            self._pnl_state,
+            self,
             trade,
             self.create_pnl,
             self.create_partial_trade,
@@ -40,13 +42,17 @@ class ABCPnl:
             self.pop_unmatched,
             self.push_matched
         )
-        return self.create(state)
+        return cast(T, state)
 
     @abstractmethod
-    def create(
+    def create_pnl(
         self,
-        pnl_state: PnlState
-    ) -> ABCPnl:
+        quantity: Decimal,
+        cost: Decimal,
+        realized: Decimal,
+        unmatched: Sequence[IPartialTrade],
+        matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
+    ) -> IPnlState:
         ...
 
     @abstractmethod
@@ -55,11 +61,6 @@ class ABCPnl:
         trade: ITrade,
         quantity: Decimal
     ) -> IPartialTrade:
-        ...
-
-
-    @abstractmethod
-    def create_pnl(self, pnl_state: PnlState) -> PnlState:
         ...
 
     @abstractmethod
@@ -88,23 +89,23 @@ class ABCPnl:
 
     @property
     def quantity(self) -> Decimal:
-        return self._pnl_state.quantity
+        return self._quantity
 
     @property
     def cost(self) -> Decimal:
-        return self._pnl_state.cost
+        return self._cost
 
     @property
     def realized(self) -> Decimal:
-        return self._pnl_state.realized
+        return self._realized
 
     @property
     def unmatched(self) -> Sequence[IPartialTrade]:
-        return self._pnl_state.unmatched
+        return self._unmatched
 
     @property
     def matched(self) -> Sequence[tuple[IPartialTrade, IPartialTrade]]:
-        return self._pnl_state.matched
+        return self._matched
 
     @property
     def avg_cost(self) -> Decimal:
@@ -128,19 +129,20 @@ class ABCPnl:
         return f"{self.quantity} @ {self.cost} + {self.realized}"
 
 
-class FifoPnl(ABCPnl):
+class FifoPnl(ABCPnl['FifoPnl']):
 
-    def create(
-        self,
-        pnl_state: PnlState
+    def create_pnl(
+            self,
+            quantity: Decimal,
+            cost: Decimal,
+            realized: Decimal,
+            unmatched: Sequence[IPartialTrade],
+            matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
     ) -> FifoPnl:
-        return FifoPnl(pnl_state)
+        return FifoPnl(quantity, cost, realized, unmatched, matched)
 
     def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
         return PartialTrade(trade, quantity)
-
-    def create_pnl(self, pnl_state: PnlState) -> PnlState:
-        return pnl_state
 
     def pop_unmatched(
             self,
@@ -167,17 +169,18 @@ class FifoPnl(ABCPnl):
 
 class LifoPnl(ABCPnl):
 
-    def create(
+    def create_pnl(
         self,
-        pnl_state: PnlState
+        quantity: Decimal,
+        cost: Decimal,
+        realized: Decimal,
+        unmatched: Sequence[IPartialTrade],
+        matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
     ) -> LifoPnl:
-        return LifoPnl(pnl_state)
+        return LifoPnl(quantity, cost, realized, unmatched, matched)
 
     def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
         return PartialTrade(trade, quantity)
-
-    def create_pnl(self, pnl_state: PnlState) -> PnlState:
-        return pnl_state
 
     def pop_unmatched(
             self,
@@ -203,17 +206,18 @@ class LifoPnl(ABCPnl):
 
 class BestPricePnl(ABCPnl):
 
-    def create(
-        self,
-        pnl_state: PnlState
+    def create_pnl(
+            self,
+            quantity: Decimal,
+            cost: Decimal,
+            realized: Decimal,
+            unmatched: Sequence[IPartialTrade],
+            matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
     ) -> BestPricePnl:
-        return BestPricePnl(pnl_state)
+        return BestPricePnl(quantity, cost, realized, unmatched, matched)
 
     def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
         return PartialTrade(trade, quantity)
-
-    def create_pnl(self, pnl_state: PnlState) -> PnlState:
-        return pnl_state
 
     def pop_unmatched(
             self,
@@ -245,17 +249,18 @@ class BestPricePnl(ABCPnl):
 
 class WorstPricePnl(ABCPnl):
 
-    def create(
-        self,
-        pnl_state: PnlState
+    def create_pnl(
+            self,
+            quantity: Decimal,
+            cost: Decimal,
+            realized: Decimal,
+            unmatched: Sequence[IPartialTrade],
+            matched: Sequence[tuple[IPartialTrade, IPartialTrade]]
     ) -> WorstPricePnl:
-        return WorstPricePnl(pnl_state)
+        return WorstPricePnl(quantity, cost, realized, unmatched, matched)
 
     def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
         return PartialTrade(trade, quantity)
-
-    def create_pnl(self, pnl_state: PnlState) -> PnlState:
-        return pnl_state
 
     def pop_unmatched(
             self,

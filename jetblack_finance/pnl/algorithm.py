@@ -39,10 +39,19 @@ from decimal import Decimal
 from typing import Callable, Sequence
 
 from .partial_trade import IPartialTrade
-from .pnl_state import PnlState
+from .pnl_state import IPnlState
 from .trade import ITrade
 
-CreatePnlState = Callable[[PnlState], PnlState]
+CreatePnlState = Callable[
+    [
+        Decimal,
+        Decimal,
+        Decimal,
+        Sequence[IPartialTrade],
+        Sequence[tuple[IPartialTrade, IPartialTrade]]
+    ],
+    IPnlState
+]
 PushUnmatched = Callable[
     [IPartialTrade, Sequence[IPartialTrade]],
     Sequence[IPartialTrade]
@@ -57,11 +66,12 @@ PushMatched = Callable[
 ]
 CreatePartialTrade = Callable[[ITrade, Decimal], IPartialTrade]
 
+
 def _extend_position(
-        pnl_state: PnlState,
+        pnl_state: IPnlState,
         partial_trade: IPartialTrade,
         create_pnl_state: CreatePnlState
-) -> PnlState:
+) -> IPnlState:
     quantity = pnl_state.quantity + partial_trade.quantity
     cost = pnl_state.cost - partial_trade.quantity * partial_trade.price
     realized = pnl_state.realized
@@ -69,13 +79,11 @@ def _extend_position(
     matched = pnl_state.matched
 
     return create_pnl_state(
-        PnlState(
-            quantity,
-            cost,
-            realized,
-            unmatched,
-            matched
-        )
+        quantity,
+        cost,
+        realized,
+        unmatched,
+        matched
     )
 
 
@@ -94,24 +102,28 @@ def _find_match(
         # The trade is larger than the matched trade.
         # Split the trade by the matched trade quantity. This leaves a
         # remainder still to match.
-        
-        remainder = create_partial_trade(partial_trade.trade, partial_trade.quantity  + matched_trade.quantity)
-        partial_trade = create_partial_trade(partial_trade.trade, -matched_trade.quantity)
+
+        remainder = create_partial_trade(
+            partial_trade.trade, partial_trade.quantity + matched_trade.quantity)
+        partial_trade = create_partial_trade(
+            partial_trade.trade, -matched_trade.quantity)
 
     elif abs(partial_trade.quantity) < abs(matched_trade.quantity):
 
         # The matched trade is bigger than the current trade. Split the match
         # and return the spare to the unmatched.
-        
-        spare = create_partial_trade(matched_trade.trade, matched_trade.quantity + partial_trade.quantity)
-        matched_trade = create_partial_trade(matched_trade.trade, -partial_trade.quantity)
+
+        spare = create_partial_trade(
+            matched_trade.trade, matched_trade.quantity + partial_trade.quantity)
+        matched_trade = create_partial_trade(
+            matched_trade.trade, -partial_trade.quantity)
         unmatched = push_unmatched(spare, unmatched)
-        
+
         # As the entire trade has been filled there is no remainder.
         remainder = None
 
     else:
-        
+
         # The trade quantity matches the matched trade quantity exactly.
         remainder = None
 
@@ -119,14 +131,14 @@ def _find_match(
 
 
 def _match(
-        pnl_state: PnlState,
+        pnl_state: IPnlState,
         partial_trade: IPartialTrade,
         create_pnl_state: CreatePnlState,
         create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
-) -> tuple[IPartialTrade | None, PnlState]:
+) -> tuple[IPartialTrade | None, IPnlState]:
     unmatched, partial_trade, matched_trade, remainder = _find_match(
         partial_trade,
         pnl_state.unmatched,
@@ -148,20 +160,20 @@ def _match(
 
     matched = push_matched(matched_trade, partial_trade, pnl_state.matched)
 
-    pnl_state = create_pnl_state(PnlState(quantity, cost, realized, unmatched, matched))
+    pnl_state = create_pnl_state(quantity, cost, realized, unmatched, matched)
 
     return remainder, pnl_state
 
 
 def _reduce_position(
-        pnl_state: PnlState,
+        pnl_state: IPnlState,
         partial_trade: IPartialTrade | None,
         create_pnl_state: CreatePnlState,
         create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
-) -> PnlState:
+) -> IPnlState:
     while partial_trade is not None and partial_trade.quantity != 0 and pnl_state.unmatched:
         partial_trade, pnl_state = _match(
             pnl_state,
@@ -188,14 +200,14 @@ def _reduce_position(
 
 
 def add_partial_trade(
-        pnl_state: PnlState,
+        pnl_state: IPnlState,
         partial_trade: IPartialTrade,
         create_pnl_state: CreatePnlState,
         create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
-) -> PnlState:
+) -> IPnlState:
     if (
         # We are flat
         pnl_state.quantity == 0 or
@@ -216,15 +228,16 @@ def add_partial_trade(
             push_matched
         )
 
+
 def add_trade(
-        pnl_state: PnlState,
+        pnl_state: IPnlState,
         trade: ITrade,
         create_pnl_state: CreatePnlState,
         create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
-) -> PnlState:
+) -> IPnlState:
     partial_trade = create_partial_trade(trade, trade.quantity)
     return add_partial_trade(
         pnl_state,
