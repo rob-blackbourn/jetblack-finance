@@ -110,13 +110,8 @@ class ABCPnl(IPnlState, Generic[T]):
     ) -> IPnlState:
         ...
 
-    @abstractmethod
-    def create_partial_trade(
-        self,
-        trade: ITrade,
-        quantity: Decimal
-    ) -> IPartialTrade:
-        ...
+    def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
+        return PartialTrade(trade, quantity)
 
     @property
     def quantity(self) -> Decimal:
@@ -202,9 +197,6 @@ class FifoPnl(ABCPnl['FifoPnl']):
             matched
         )
 
-    def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
-        return PartialTrade(trade, quantity)
-
 
 class LifoPnl(ABCPnl):
 
@@ -247,9 +239,6 @@ class LifoPnl(ABCPnl):
             unmatched,
             matched
         )
-
-    def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
-        return PartialTrade(trade, quantity)
 
 
 class BestPricePnl(ABCPnl):
@@ -299,9 +288,6 @@ class BestPricePnl(ABCPnl):
             matched
         )
 
-    def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
-        return PartialTrade(trade, quantity)
-
 
 class WorstPricePnl(ABCPnl):
 
@@ -349,6 +335,3 @@ class WorstPricePnl(ABCPnl):
             unmatched,
             matched
         )
-
-    def create_partial_trade(self, trade: ITrade, quantity: Decimal) -> IPartialTrade:
-        return PartialTrade(trade, quantity)
