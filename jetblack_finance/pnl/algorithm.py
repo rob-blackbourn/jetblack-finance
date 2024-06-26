@@ -37,7 +37,7 @@ match.
 
 from abc import abstractmethod
 from decimal import Decimal
-from typing import Callable, Protocol, Sequence, runtime_checkable
+from typing import Callable, Protocol, runtime_checkable
 
 
 @runtime_checkable
