@@ -36,7 +36,7 @@ class ABCPnl:
             self._pnl_state,
             split_trade,
             self.create_pnl,
-            self.split_partial_trade,
+            self.create_partial_trade,
             self.push_unmatched,
             self.pop_unmatched,
             self.push_matched
@@ -58,15 +58,6 @@ class ABCPnl:
     ) -> IPartialTrade:
         ...
 
-    def split_partial_trade(
-        self,
-        partial_trade: IPartialTrade,
-        quantity: Decimal
-    ) -> tuple[IPartialTrade, IPartialTrade]:
-        assert abs(partial_trade.quantity) >= abs(quantity)
-        matched = self.create_partial_trade(partial_trade.trade, quantity)
-        unmatched = self.create_partial_trade(partial_trade.trade, partial_trade.quantity - quantity)
-        return matched, unmatched
 
     @abstractmethod
     def create_pnl(self, pnl_state: PnlState) -> PnlState:

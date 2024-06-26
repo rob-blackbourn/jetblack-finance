@@ -40,6 +40,7 @@ from typing import Callable, Sequence
 
 from .partial_trade import IPartialTrade
 from .pnl_state import PnlState
+from .trade import ITrade
 
 CreatePnl = Callable[[PnlState], PnlState]
 PushUnmatched = Callable[
@@ -54,7 +55,7 @@ PushMatched = Callable[
     [IPartialTrade, IPartialTrade, Sequence[tuple[IPartialTrade, IPartialTrade]]],
     Sequence[tuple[IPartialTrade, IPartialTrade]]
 ]
-SplitTrade = Callable[[IPartialTrade, Decimal], tuple[IPartialTrade, IPartialTrade]]
+CreatePartialTrade = Callable[[ITrade, Decimal], IPartialTrade]
 
 def _extend_position(
         pnl: PnlState,
@@ -85,9 +86,9 @@ def _extend_position(
 
 
 def _find_match(
-        trade: IPartialTrade,
+        partial_trade: IPartialTrade,
         unmatched: Sequence[IPartialTrade],
-        split_trade: SplitTrade,
+        create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched
 ) -> tuple[Sequence[IPartialTrade], IPartialTrade, IPartialTrade, IPartialTrade | None]:
@@ -111,15 +112,17 @@ def _find_match(
     # Fetch the next trade to match.
     matched_trade, unmatched = pop_unmatched(unmatched)
 
-    if abs(trade.quantity) > abs(matched_trade.quantity):
+    if abs(partial_trade.quantity) > abs(matched_trade.quantity):
         # The trade is larger than the matched trade.
         # Split the trade by the matched trade quantity. This leaves a
         # remainder still to match.
-        trade, remainder = split_trade(trade, -matched_trade.quantity)
-    elif abs(trade.quantity) < abs(matched_trade.quantity):
+        remainder = create_partial_trade(partial_trade.trade, partial_trade.quantity  + matched_trade.quantity)
+        partial_trade = create_partial_trade(partial_trade.trade, -matched_trade.quantity)
+    elif abs(partial_trade.quantity) < abs(matched_trade.quantity):
         # The matched trade is bigger than the current trade. Split the match
         # and return the spare to the unmatched.
-        matched_trade, spare = split_trade(matched_trade, -trade.quantity)
+        spare = create_partial_trade(matched_trade.trade, matched_trade.quantity + partial_trade.quantity)
+        matched_trade = create_partial_trade(matched_trade.trade, -partial_trade.quantity)
         unmatched = push_unmatched(spare, unmatched)
         # As the entire trade has been filled there is no remainder.
         remainder = None
@@ -127,14 +130,14 @@ def _find_match(
         # The trade quantity matches the matched trade quantity exactly.
         remainder = None
 
-    return unmatched, trade, matched_trade, remainder
+    return unmatched, partial_trade, matched_trade, remainder
 
 
 def _match(
         pnl: PnlState,
         trade: IPartialTrade,
         create_pnl: CreatePnl,
-        split_trade: SplitTrade,
+        create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
@@ -144,7 +147,8 @@ def _match(
     Args:
         pnl (PnlState): The current p/l state.
         trade (IPartialTrade): The trade to be filled.
-        split_trade (SplitTrade): Split a partial trade by quantity.
+        create_pnl: (CreatePnl): Create the pnl.
+        create_partial_trade (CreatePartialTrade): Create a partial trade.
         push_unmatched (Callable[[IPartialTrade, Unmatched], Unmatched]): A
             function to add an trade to the unmatched trades.
         pop_unmatched (Callable[[Unmatched], tuple[IPartialTrade, Unmatched]]): A
@@ -158,7 +162,7 @@ def _match(
     unmatched, trade, matched_trade, remainder = _find_match(
         trade,
         pnl.unmatched,
-        split_trade,
+        create_partial_trade,
         push_unmatched,
         pop_unmatched
     )
@@ -185,7 +189,7 @@ def _reduce_position(
         pnl: PnlState,
         trade: IPartialTrade | None,
         create_pnl: CreatePnl,
-        split_trade: SplitTrade,
+        create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
@@ -210,7 +214,7 @@ def _reduce_position(
             pnl,
             trade,
             create_pnl,
-            split_trade,
+            create_partial_trade,
             push_unmatched,
             pop_unmatched,
             push_matched,
@@ -221,7 +225,7 @@ def _reduce_position(
             pnl,
             trade,
             create_pnl,
-            split_trade,
+            create_partial_trade,
             push_unmatched,
             pop_unmatched,
             push_matched,
@@ -234,7 +238,7 @@ def add_partial_trade(
         pnl: PnlState,
         trade: IPartialTrade,
         create_pnl: CreatePnl,
-        split_trade: SplitTrade,
+        create_partial_trade: CreatePartialTrade,
         push_unmatched: PushUnmatched,
         pop_unmatched: PopUnmatched,
         push_matched: PushMatched,
@@ -272,7 +276,7 @@ def add_partial_trade(
             pnl,
             trade,
             create_pnl,
-            split_trade,
+            create_partial_trade,
             push_unmatched,
             pop_unmatched,
             push_matched
