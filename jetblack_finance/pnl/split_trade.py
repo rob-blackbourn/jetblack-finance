@@ -32,18 +32,18 @@ class SplitTrade(ISplitTrade):
     def __init__(
             self,
             trade: ITrade,
-            used: Decimal | None = None,
+            quantity: Decimal | None = None,
     ) -> None:
         self._trade = trade
-        self._used: Decimal = (
-            used
-            if used is not None
-            else Decimal(0)
+        self._quantity: Decimal = (
+            quantity
+            if quantity is not None
+            else trade.quantity
         )
 
     @property
     def quantity(self) -> Decimal:
-        return self._trade.quantity - self._used
+        return self._quantity
 
     @property
     def price(self) -> Decimal:
@@ -51,16 +51,15 @@ class SplitTrade(ISplitTrade):
 
     def split(self, quantity: Decimal) -> tuple[SplitTrade, SplitTrade]:
         assert abs(self.quantity) >= abs(quantity)
-        unused = self.quantity - quantity
-        matched = SplitTrade(self._trade, self._used + unused)
-        unmatched = SplitTrade(self._trade, self._used + quantity)
+        matched = SplitTrade(self._trade, quantity)
+        unmatched = SplitTrade(self._trade, self.quantity - quantity)
         return matched, unmatched
 
     def __eq__(self, value: object) -> bool:
         return (
             isinstance(value, SplitTrade) and
             self._trade == value._trade and
-            self._used == value._used
+            self.quantity == value.quantity
         )
 
     def __repr__(self) -> str:
