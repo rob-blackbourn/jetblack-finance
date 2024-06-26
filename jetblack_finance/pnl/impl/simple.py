@@ -6,9 +6,9 @@ from abc import abstractmethod
 from decimal import Decimal
 from typing import Any, Generic, Sequence, TypeVar, cast
 
-from .algorithm import IPartialTrade, ITrade, IPnlState
-from .pnl_strip import PnlStrip
-from .algorithm import add_trade
+from ..algorithm import IPartialTrade, ITrade, IPnlState
+from ..pnl_strip import PnlStrip
+from ..algorithm import add_trade
 
 T = TypeVar('T', bound='ABCPnl')
 

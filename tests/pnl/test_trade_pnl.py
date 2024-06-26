@@ -2,12 +2,12 @@
 
 from decimal import Decimal
 
-from jetblack_finance.pnl import (
+from jetblack_finance.pnl import ITrade
+from jetblack_finance.pnl.impl.simple import (
     FifoPnl,
     LifoPnl,
     BestPricePnl,
     WorstPricePnl,
-    ITrade,
     PartialTrade,
 )
 
