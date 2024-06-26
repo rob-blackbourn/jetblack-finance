@@ -8,9 +8,7 @@ from .pnl_implementations import (
     BestPricePnl,
     WorstPricePnl,
 )
-from .pnl_state import IPnlState
-from .partial_trade import IPartialTrade
-from .trade import ITrade
+from .algorithm import IPartialTrade, ITrade, IPnlState
 
 __all__ = [
     'ITrade',

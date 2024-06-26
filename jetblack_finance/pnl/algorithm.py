@@ -35,12 +35,70 @@ If the trade is larger it is split and the remainder becomes the next trade to
 match.
 """
 
+from abc import abstractmethod
 from decimal import Decimal
-from typing import Callable, Sequence
+from typing import Callable, Protocol, Sequence, runtime_checkable
 
-from .partial_trade import IPartialTrade
-from .pnl_state import IPnlState
-from .trade import ITrade
+
+@runtime_checkable
+class ITrade(Protocol):
+
+    @property
+    @abstractmethod
+    def quantity(self) -> Decimal:
+        ...
+
+    @property
+    @abstractmethod
+    def price(self) -> Decimal:
+        ...
+
+
+class IPartialTrade(Protocol):
+
+    @property
+    @abstractmethod
+    def trade(self) -> ITrade:
+        ...
+
+    @property
+    @abstractmethod
+    def quantity(self) -> Decimal:
+        ...
+
+    @property
+    @abstractmethod
+    def price(self) -> Decimal:
+        ...
+
+
+class IPnlState(Protocol):
+
+    @property
+    @abstractmethod
+    def quantity(self) -> Decimal:
+        ...
+
+    @property
+    @abstractmethod
+    def cost(self) -> Decimal:
+        ...
+
+    @property
+    @abstractmethod
+    def realized(self) -> Decimal:
+        ...
+
+    @property
+    @abstractmethod
+    def unmatched(self) -> Sequence[IPartialTrade]:
+        ...
+
+    @property
+    @abstractmethod
+    def matched(self) -> Sequence[tuple[IPartialTrade, IPartialTrade]]:
+        ...
+
 
 CreatePnlState = Callable[
     [
