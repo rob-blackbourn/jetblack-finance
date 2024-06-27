@@ -37,10 +37,6 @@ class PartialTrade(IPartialTrade):
     def quantity(self) -> Decimal:
         return self._quantity
 
-    @property
-    def price(self) -> Decimal:
-        return self._trade.price
-
     def __eq__(self, value: object) -> bool:
         return (
             isinstance(value, PartialTrade) and
@@ -49,7 +45,7 @@ class PartialTrade(IPartialTrade):
         )
 
     def __repr__(self) -> str:
-        return f"{self.quantity} (of {self._trade.quantity}) @ {self.price}"
+        return f"{self.quantity} (of {self._trade.quantity}) @ {self.trade.price}"
 
 
 class ABCPnl(IPnlState, Generic[T]):
@@ -252,7 +248,7 @@ class BestPricePnl(ABCPnl):
             self._pool = tuple((*self._pool, partial_trade))
 
         def pop(self, pnl_state: IPnlState) -> IPartialTrade:
-            self._pool = sorted(self._pool, key=lambda x: x.price)
+            self._pool = sorted(self._pool, key=lambda x: x.trade.price)
             order, self._pool = (
                 (self._pool[0], self._pool[1:])
                 if pnl_state.quantity > 0
@@ -300,7 +296,7 @@ class WorstPricePnl(ABCPnl):
             self._pool = tuple((*self._pool, partial_trade))
 
         def pop(self, pnl_state: IPnlState) -> IPartialTrade:
-            self._pool = sorted(self._pool, key=lambda x: x.price)
+            self._pool = sorted(self._pool, key=lambda x: x.trade.price)
             order, self._pool = (
                 (self._pool[-1], self._pool[:-1])
                 if pnl_state.quantity > 0

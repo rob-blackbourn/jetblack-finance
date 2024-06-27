@@ -66,11 +66,6 @@ class IPartialTrade(Protocol):
     def quantity(self) -> Decimal:
         ...
 
-    @property
-    @abstractmethod
-    def price(self) -> Decimal:
-        ...
-
 
 class IUnmatchedPool(Protocol):
 
@@ -143,7 +138,7 @@ def _extend_position(
         create_pnl_state: CreatePnlState,
 ) -> IPnlState:
     quantity = pnl_state.quantity + partial_trade.quantity
-    cost = pnl_state.cost - partial_trade.quantity * partial_trade.price
+    cost = pnl_state.cost - partial_trade.quantity * partial_trade.trade.price
     realized = pnl_state.realized
     pnl_state.unmatched.push(partial_trade)
 
@@ -218,8 +213,8 @@ def _match(
     )
 
     # Note that the open will have the opposite sign to the close.
-    close_value = partial_trade.quantity * partial_trade.price
-    open_cost = -(matched_trade.quantity * matched_trade.price)
+    close_value = partial_trade.quantity * partial_trade.trade.price
+    open_cost = -(matched_trade.quantity * matched_trade.trade.price)
 
     # The difference between the two costs is the realized value.
     realized = pnl_state.realized - (close_value - open_cost)
