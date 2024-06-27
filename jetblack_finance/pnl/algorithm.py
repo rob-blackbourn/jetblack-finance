@@ -146,7 +146,6 @@ def _extend_position(
     cost = pnl_state.cost - partial_trade.quantity * partial_trade.price
     realized = pnl_state.realized
     pnl_state.unmatched.push(partial_trade)
-    pnl_state.matched
 
     return create_pnl_state(
         quantity,
