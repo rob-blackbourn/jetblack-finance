@@ -103,7 +103,7 @@ def _find_opening_trade(
 
         # The closing trade is larger than the opening trade.
         # Split the closing trade into two: one of the same size as the opening
-        # trade, and a second with the remaining quantity.
+        # trade, and a second with the unmatched quantity.
 
         matched_opening_trade = opening_trade
         matched_closing_trade = create_trade(
