@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Any, Generic, Sequence, TypeVar, cast
 
 from ..types import (
-    IPartialTrade,
+    IPnlTrade,
     IMarketTrade,
     IPnlState,
     IMatchedPool,
@@ -19,7 +19,7 @@ from ..algorithm import add_trade
 T = TypeVar('T', bound='ABCPnl')
 
 
-class PartialTrade(IPartialTrade):
+class PartialTrade(IPnlTrade):
 
     def __init__(
             self,
@@ -52,10 +52,10 @@ class ABCPnl(IPnlState, Generic[T]):
 
     class MatchedPool(IMatchedPool):
 
-        def __init__(self, pool: Sequence[tuple[IPartialTrade, IPartialTrade]] = ()) -> None:
+        def __init__(self, pool: Sequence[tuple[IPnlTrade, IPnlTrade]] = ()) -> None:
             self._pool = pool
 
-        def push(self, opening: IPartialTrade, closing: IPartialTrade) -> None:
+        def push(self, opening: IPnlTrade, closing: IPnlTrade) -> None:
             matched_trade = (opening, closing)
             self._pool = tuple((*self._pool, matched_trade))
 
@@ -106,7 +106,7 @@ class ABCPnl(IPnlState, Generic[T]):
     ) -> IPnlState:
         ...
 
-    def create_partial_trade(self, trade: IMarketTrade, quantity: Decimal) -> IPartialTrade:
+    def create_partial_trade(self, trade: IMarketTrade, quantity: Decimal) -> IPnlTrade:
         return PartialTrade(trade, quantity)
 
     @property
@@ -155,13 +155,13 @@ class FifoPnl(ABCPnl['FifoPnl']):
 
     class UnmatchedPool(IUnmatchedPool):
 
-        def __init__(self, pool: Sequence[IPartialTrade] = ()) -> None:
+        def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, partial_trade: IPartialTrade) -> None:
+        def push(self, partial_trade: IPnlTrade) -> None:
             self._pool = tuple((*self._pool, partial_trade))
 
-        def pop(self, quantity: Decimal, cost: Decimal) -> IPartialTrade:
+        def pop(self, quantity: Decimal, cost: Decimal) -> IPnlTrade:
             partial_trade, self._pool = (self._pool[0], self._pool[1:])
             return partial_trade
 
@@ -198,13 +198,13 @@ class LifoPnl(ABCPnl):
 
     class UnmatchedPool(IUnmatchedPool):
 
-        def __init__(self, pool: Sequence[IPartialTrade] = ()) -> None:
+        def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, partial_trade: IPartialTrade) -> None:
+        def push(self, partial_trade: IPnlTrade) -> None:
             self._pool = tuple((*self._pool, partial_trade))
 
-        def pop(self, quantity: Decimal, cost: Decimal) -> IPartialTrade:
+        def pop(self, quantity: Decimal, cost: Decimal) -> IPnlTrade:
             partial_trade, self._pool = (self._pool[-1], self._pool[:-1])
             return partial_trade
 
@@ -241,13 +241,13 @@ class BestPricePnl(ABCPnl):
 
     class UnmatchedPool(IUnmatchedPool):
 
-        def __init__(self, pool: Sequence[IPartialTrade] = ()) -> None:
+        def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, partial_trade: IPartialTrade) -> None:
+        def push(self, partial_trade: IPnlTrade) -> None:
             self._pool = tuple((*self._pool, partial_trade))
 
-        def pop(self, quantity: Decimal, cost: Decimal) -> IPartialTrade:
+        def pop(self, quantity: Decimal, cost: Decimal) -> IPnlTrade:
             self._pool = sorted(self._pool, key=lambda x: x.trade.price)
             order, self._pool = (
                 (self._pool[0], self._pool[1:])
@@ -289,13 +289,13 @@ class WorstPricePnl(ABCPnl):
 
     class UnmatchedPool(IUnmatchedPool):
 
-        def __init__(self, pool: Sequence[IPartialTrade] = ()) -> None:
+        def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, partial_trade: IPartialTrade) -> None:
+        def push(self, partial_trade: IPnlTrade) -> None:
             self._pool = tuple((*self._pool, partial_trade))
 
-        def pop(self, quantity: Decimal, cost: Decimal) -> IPartialTrade:
+        def pop(self, quantity: Decimal, cost: Decimal) -> IPnlTrade:
             self._pool = sorted(self._pool, key=lambda x: x.trade.price)
             order, self._pool = (
                 (self._pool[-1], self._pool[:-1])

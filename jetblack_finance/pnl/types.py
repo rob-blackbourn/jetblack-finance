@@ -20,7 +20,7 @@ class IMarketTrade(Protocol):
         ...
 
 
-class IPartialTrade(Protocol):
+class IPnlTrade(Protocol):
 
     @property
     @abstractmethod
@@ -36,11 +36,11 @@ class IPartialTrade(Protocol):
 class IUnmatchedPool(Protocol):
 
     @abstractmethod
-    def push(self, partial_trade: IPartialTrade) -> None:
+    def push(self, partial_trade: IPnlTrade) -> None:
         ...
 
     @abstractmethod
-    def pop(self, quantity: Decimal, cost: Decimal) -> IPartialTrade:
+    def pop(self, quantity: Decimal, cost: Decimal) -> IPnlTrade:
         ...
 
     def __len__(self) -> int:
@@ -50,7 +50,7 @@ class IUnmatchedPool(Protocol):
 class IMatchedPool(Protocol):
 
     @abstractmethod
-    def push(self, opening: IPartialTrade, closing: IPartialTrade) -> None:
+    def push(self, opening: IPnlTrade, closing: IPnlTrade) -> None:
         ...
 
     def __len__(self) -> int:
