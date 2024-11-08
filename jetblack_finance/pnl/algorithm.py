@@ -35,88 +35,10 @@ If the trade is larger it is split and the remainder becomes the next trade to
 match.
 """
 
-from abc import abstractmethod
 from decimal import Decimal
-from typing import Callable, Protocol, runtime_checkable
+from typing import Callable
 
-
-@runtime_checkable
-class ITrade(Protocol):
-
-    @property
-    @abstractmethod
-    def quantity(self) -> Decimal:
-        ...
-
-    @property
-    @abstractmethod
-    def price(self) -> Decimal:
-        ...
-
-
-class IPartialTrade(Protocol):
-
-    @property
-    @abstractmethod
-    def trade(self) -> ITrade:
-        ...
-
-    @property
-    @abstractmethod
-    def quantity(self) -> Decimal:
-        ...
-
-
-class IUnmatchedPool(Protocol):
-
-    @abstractmethod
-    def push(self, partial_trade: IPartialTrade) -> None:
-        ...
-
-    @abstractmethod
-    def pop(self, pnl_state: 'IPnlState') -> IPartialTrade:
-        ...
-
-    def __len__(self) -> int:
-        ...
-
-
-class IMatchedPool(Protocol):
-
-    @abstractmethod
-    def push(self, opening: IPartialTrade, closing: IPartialTrade) -> None:
-        ...
-
-    def __len__(self) -> int:
-        ...
-
-
-class IPnlState(Protocol):
-
-    @property
-    @abstractmethod
-    def quantity(self) -> Decimal:
-        ...
-
-    @property
-    @abstractmethod
-    def cost(self) -> Decimal:
-        ...
-
-    @property
-    @abstractmethod
-    def realized(self) -> Decimal:
-        ...
-
-    @property
-    @abstractmethod
-    def unmatched(self) -> IUnmatchedPool:
-        ...
-
-    @property
-    @abstractmethod
-    def matched(self) -> IMatchedPool:
-        ...
+from .types import IMarketTrade, IPartialTrade, IUnmatchedPool, IMatchedPool, IPnlState
 
 
 CreatePnlState = Callable[
@@ -129,25 +51,43 @@ CreatePnlState = Callable[
     ],
     IPnlState
 ]
-CreatePartialTrade = Callable[[ITrade, Decimal], IPartialTrade]
+CreatePartialTrade = Callable[[IMarketTrade, Decimal], IPartialTrade]
 
 
 def _extend_position(
-        pnl_state: IPnlState,
-        partial_trade: IPartialTrade,
-        create_pnl_state: CreatePnlState,
+        state: IPnlState,
+        trade: IPartialTrade,
+        create_state: CreatePnlState,
 ) -> IPnlState:
-    quantity = pnl_state.quantity + partial_trade.quantity
-    cost = pnl_state.cost - partial_trade.quantity * partial_trade.trade.price
-    realized = pnl_state.realized
-    pnl_state.unmatched.push(partial_trade)
+    """Extend a position.
 
-    return create_pnl_state(
+    This happens for:
+
+    * A buy or sell from a flat position.
+    * A buy from a long position.
+    * A sell from a short position.
+
+    In this situation no P&L is generated. The position size is increased, as is
+    the cost of creating the position.
+
+    Args:
+        state (IPnlState): The state of the system.
+        trade (IPartialTrade): The new trade.
+        create_state (CreatePnlState): A factory method to create the new state.
+
+    Returns:
+        IPnlState: The new P&L state.
+    """
+    quantity = state.quantity + trade.quantity
+    cost = state.cost - trade.quantity * trade.trade.price
+    state.unmatched.push(trade)
+
+    return create_state(
         quantity,
         cost,
-        realized,
-        pnl_state.unmatched,
-        pnl_state.matched
+        state.realized,
+        state.unmatched,
+        state.matched
     )
 
 
@@ -157,7 +97,7 @@ def _find_match(
         create_partial_trade: CreatePartialTrade,
 ) -> tuple[IPartialTrade, IPartialTrade, IPartialTrade | None]:
     # Fetch the next trade to match.
-    matched_trade = pnl_state.unmatched.pop(pnl_state)
+    matched_trade = pnl_state.unmatched.pop(pnl_state.quantity, pnl_state.cost)
 
     if abs(partial_trade.quantity) > abs(matched_trade.quantity):
 
@@ -290,13 +230,13 @@ def add_partial_trade(
 
 
 def add_trade(
-        pnl_state: IPnlState,
-        trade: ITrade,
+        state: IPnlState,
+        trade: IMarketTrade,
         create_pnl_state: CreatePnlState,
         create_partial_trade: CreatePartialTrade,
 ) -> IPnlState:
     return add_partial_trade(
-        pnl_state,
+        state,
         create_partial_trade(trade, trade.quantity),
         create_pnl_state,
         create_partial_trade,

@@ -1,9 +1,9 @@
 """pnl"""
 
-from .algorithm import IPartialTrade, ITrade, IPnlState
+from .types import IPartialTrade, IMarketTrade, IPnlState
 
 __all__ = [
-    'ITrade',
+    'IMarketTrade',
     'IPnlState',
     'IPartialTrade'
 ]

@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from jetblack_finance.pnl import ITrade
+from jetblack_finance.pnl import IMarketTrade
 from jetblack_finance.pnl.impl.simple import (
     FifoPnl,
     LifoPnl,
@@ -12,7 +12,7 @@ from jetblack_finance.pnl.impl.simple import (
 )
 
 
-class Trade(ITrade):
+class Trade(IMarketTrade):
     """A simple trade"""
 
     def __init__(self, quantity: Decimal | int, price: Decimal | int) -> None:
