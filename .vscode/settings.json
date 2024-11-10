@@ -13,6 +13,8 @@
   "cSpell.words": [
     "appendleft",
     "jetblack",
-    "popleft"
+    "lastrowid",
+    "popleft",
+    "pymysql"
   ]
 }

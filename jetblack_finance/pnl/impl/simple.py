@@ -19,7 +19,7 @@ from ..algorithm import add_trade
 T = TypeVar('T', bound='ABCPnl')
 
 
-class PartialTrade(IPnlTrade):
+class PnlTrade(IPnlTrade):
 
     def __init__(
             self,
@@ -39,7 +39,7 @@ class PartialTrade(IPnlTrade):
 
     def __eq__(self, value: object) -> bool:
         return (
-            isinstance(value, PartialTrade) and
+            isinstance(value, PnlTrade) and
             self._trade == value._trade and
             self.quantity == value.quantity
         )
@@ -107,7 +107,7 @@ class ABCPnl(IPnlState, Generic[T]):
         ...
 
     def create_partial_trade(self, trade: IMarketTrade, quantity: Decimal) -> IPnlTrade:
-        return PartialTrade(trade, quantity)
+        return PnlTrade(trade, quantity)
 
     @property
     def quantity(self) -> Decimal:

@@ -1,9 +1,17 @@
 """pnl"""
 
-from .types import IPnlTrade, IMarketTrade, IPnlState
+from .types import (
+    IPnlTrade,
+    IMarketTrade,
+    IPnlState,
+    IMatchedPool,
+    IUnmatchedPool
+)
 
 __all__ = [
     'IMarketTrade',
     'IPnlState',
-    'IPnlTrade'
+    'IPnlTrade',
+    'IMatchedPool',
+    'IUnmatchedPool',
 ]

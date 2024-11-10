@@ -8,7 +8,7 @@ from jetblack_finance.pnl.impl.simple import (
     LifoPnl,
     BestPricePnl,
     WorstPricePnl,
-    PartialTrade,
+    PnlTrade,
 )
 
 
@@ -207,8 +207,8 @@ def test_long_to_short_fifo_with_profit():
     assert len(pnl.unmatched) == 0
     expected = FifoPnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(1, 100), 1),
-            PartialTrade(MarketTrade(-1, 102), -1)
+            PnlTrade(MarketTrade(1, 100), 1),
+            PnlTrade(MarketTrade(-1, 102), -1)
         ),
     ))
     assert pnl.matched == expected
@@ -227,8 +227,8 @@ def test_short_to_long_fifo_with_profit():
     assert len(pnl.unmatched) == 0
     assert pnl.matched == FifoPnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(-1, 102), -1),
-            PartialTrade(MarketTrade(1, 100), 1)
+            PnlTrade(MarketTrade(-1, 102), -1),
+            PnlTrade(MarketTrade(1, 100), 1)
         ),
     ))
 
@@ -246,8 +246,8 @@ def test_long_to_short_fifo_with_loss():
     assert len(pnl.unmatched) == 0
     assert pnl.matched == FifoPnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(1, 102), 1),
-            PartialTrade(MarketTrade(-1, 100), -1)
+            PnlTrade(MarketTrade(1, 102), 1),
+            PnlTrade(MarketTrade(-1, 100), -1)
         ),
     ))
 
@@ -265,8 +265,8 @@ def test_short_to_long_fifo_with_loss():
     assert len(pnl.unmatched) == 0
     assert pnl.matched == FifoPnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(-1, 100), -1),
-            PartialTrade(MarketTrade(1, 102), 1)
+            PnlTrade(MarketTrade(-1, 100), -1),
+            PnlTrade(MarketTrade(1, 102), 1)
         ),
     ))
 
@@ -281,12 +281,12 @@ def test_long_sell_fifo_through_flat():
     assert pnl.cost == 102
     assert pnl.realized == 1
     assert pnl.unmatched == FifoPnl.UnmatchedPool((
-        PartialTrade(MarketTrade(-2, 102), -1),
+        PnlTrade(MarketTrade(-2, 102), -1),
     ))
     assert pnl.matched == FifoPnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(1, 101), 1),
-            PartialTrade(MarketTrade(-2, 102), -1)
+            PnlTrade(MarketTrade(1, 101), 1),
+            PnlTrade(MarketTrade(-2, 102), -1)
         ),
     ))
 
@@ -301,12 +301,12 @@ def test_short_buy_fifo_through_flat():
     assert pnl.cost == -101
     assert pnl.realized == 1
     assert pnl.unmatched == FifoPnl.UnmatchedPool((
-        PartialTrade(MarketTrade(2, 101), 1),
+        PnlTrade(MarketTrade(2, 101), 1),
     ))
     assert pnl.matched == FifoPnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(-1, 102), -1),
-            PartialTrade(MarketTrade(2, 101), 1)
+            PnlTrade(MarketTrade(-1, 102), -1),
+            PnlTrade(MarketTrade(2, 101), 1)
         ),
     ))
 
@@ -327,12 +327,12 @@ def test_one_buy_many_sells_fifo():
     assert len(pnl.unmatched) == 0
     assert pnl.matched == FifoPnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(10, 101), 5),
-            PartialTrade(MarketTrade(-5, 102), -5)
+            PnlTrade(MarketTrade(10, 101), 5),
+            PnlTrade(MarketTrade(-5, 102), -5)
         ),
         (
-            PartialTrade(MarketTrade(10, 101), 5),
-            PartialTrade(MarketTrade(-5, 104), -5)
+            PnlTrade(MarketTrade(10, 101), 5),
+            PnlTrade(MarketTrade(-5, 104), -5)
         ),
     ))
 
@@ -379,24 +379,24 @@ def test_many_buys_one_sell_fifo():
     pnl = pnl + MarketTrade(-5, 104)
     assert pnl.matched == FifoPnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(1, 100), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 100), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 102), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 102), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 101), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 101), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 104), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 104), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 103), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 103), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
     ))
 
@@ -413,24 +413,24 @@ def test_many_buys_one_sell_lifo():
     pnl = pnl + MarketTrade(-5, 104)
     assert pnl.matched == LifoPnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(1, 103), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 103), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 104), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 104), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 101), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 101), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 102), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 102), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 100), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 100), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
     ))
 
@@ -450,24 +450,24 @@ def test_many_buys_one_sell_best_price():
     pnl = pnl + MarketTrade(-5, 104)
     assert pnl.matched == BestPricePnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(1, 100), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 100), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 101), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 101), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 102), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 102), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 103), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 103), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 104), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 104), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
     ))
 
@@ -488,24 +488,24 @@ def test_many_sells_one_buy_best_price():
 
     expected = BestPricePnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(-1, 104), -1),
-            PartialTrade(MarketTrade(5, 104), 1)
+            PnlTrade(MarketTrade(-1, 104), -1),
+            PnlTrade(MarketTrade(5, 104), 1)
         ),
         (
-            PartialTrade(MarketTrade(-1, 103), -1),
-            PartialTrade(MarketTrade(5, 104), 1)
+            PnlTrade(MarketTrade(-1, 103), -1),
+            PnlTrade(MarketTrade(5, 104), 1)
         ),
         (
-            PartialTrade(MarketTrade(-1, 102), -1),
-            PartialTrade(MarketTrade(5, 104), 1)
+            PnlTrade(MarketTrade(-1, 102), -1),
+            PnlTrade(MarketTrade(5, 104), 1)
         ),
         (
-            PartialTrade(MarketTrade(-1, 101), -1),
-            PartialTrade(MarketTrade(5, 104), 1)
+            PnlTrade(MarketTrade(-1, 101), -1),
+            PnlTrade(MarketTrade(5, 104), 1)
         ),
         (
-            PartialTrade(MarketTrade(-1, 100), -1),
-            PartialTrade(MarketTrade(5, 104), 1)
+            PnlTrade(MarketTrade(-1, 100), -1),
+            PnlTrade(MarketTrade(5, 104), 1)
         ),
     ))
 
@@ -528,24 +528,24 @@ def test_many_buys_one_sell_worst_price():
 
     expected = WorstPricePnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(1, 104), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 104), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 103), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 103), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 102), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 102), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 101), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 101), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
         (
-            PartialTrade(MarketTrade(1, 100), 1),
-            PartialTrade(MarketTrade(-5, 104), -1)
+            PnlTrade(MarketTrade(1, 100), 1),
+            PnlTrade(MarketTrade(-5, 104), -1)
         ),
     ))
 
@@ -568,24 +568,24 @@ def test_many_sells_one_buy_worst_price():
 
     expected = WorstPricePnl.MatchedPool((
         (
-            PartialTrade(MarketTrade(-1, 100), -1),
-            PartialTrade(MarketTrade(5, 104), 1)
+            PnlTrade(MarketTrade(-1, 100), -1),
+            PnlTrade(MarketTrade(5, 104), 1)
         ),
         (
-            PartialTrade(MarketTrade(-1, 101), -1),
-            PartialTrade(MarketTrade(5, 104), 1)
+            PnlTrade(MarketTrade(-1, 101), -1),
+            PnlTrade(MarketTrade(5, 104), 1)
         ),
         (
-            PartialTrade(MarketTrade(-1, 102), -1),
-            PartialTrade(MarketTrade(5, 104), 1)
+            PnlTrade(MarketTrade(-1, 102), -1),
+            PnlTrade(MarketTrade(5, 104), 1)
         ),
         (
-            PartialTrade(MarketTrade(-1, 103), -1),
-            PartialTrade(MarketTrade(5, 104), 1)
+            PnlTrade(MarketTrade(-1, 103), -1),
+            PnlTrade(MarketTrade(5, 104), 1)
         ),
         (
-            PartialTrade(MarketTrade(-1, 104), -1),
-            PartialTrade(MarketTrade(5, 104), 1)
+            PnlTrade(MarketTrade(-1, 104), -1),
+            PnlTrade(MarketTrade(5, 104), 1)
         ),
     ))
     assert pnl.matched == expected

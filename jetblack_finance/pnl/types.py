@@ -36,7 +36,7 @@ class IPnlTrade(Protocol):
 class IUnmatchedPool(Protocol):
 
     @abstractmethod
-    def push(self, partial_trade: IPnlTrade) -> None:
+    def push(self, pnl_trade: IPnlTrade) -> None:
         ...
 
     @abstractmethod
