@@ -2,37 +2,12 @@
 
 from decimal import Decimal
 
-from jetblack_finance.trading_pnl import IMarketTrade, TradingPnl, IPnlTrade, add_trade
+from jetblack_finance.trading_pnl import TradingPnl, IPnlTrade, add_trade
 from jetblack_finance.trading_pnl.impl.simple import (
+    MarketTrade,
     MatchedPool,
     UnmatchedPool,
 )
-
-
-class MarketTrade(IMarketTrade):
-    """A simple trade"""
-
-    def __init__(self, quantity: Decimal | int, price: Decimal | int) -> None:
-        self._quantity = Decimal(quantity)
-        self._price = Decimal(price)
-
-    @property
-    def quantity(self) -> Decimal:
-        return self._quantity
-
-    @property
-    def price(self) -> Decimal:
-        return self._price
-
-    def __eq__(self, value: object) -> bool:
-        return (
-            isinstance(value, MarketTrade) and
-            value.quantity == self.quantity and
-            value.price == self.price
-        )
-
-    def __repr__(self) -> str:
-        return f"{self.quantity} @ {self.price}"
 
 
 def test_long_to_short_with_splits_best_price():
