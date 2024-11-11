@@ -2,7 +2,6 @@
 """
 
 from datetime import datetime, timedelta
-from decimal import Decimal
 
 import pymysql
 import pymysql.cursors
