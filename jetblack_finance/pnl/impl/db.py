@@ -409,47 +409,33 @@ def main():
     trade_db.drop()
     trade_db.create_tables()
 
-    with con.cursor() as cur:
-        matched = MatchedPool(cur, 'AAPL', 'tech')
-        unmatched = UnmatchedPool.Fifo(cur, 'AAPL', 'tech')
-        pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    ticker = 'AAPL'
+    book = 'tech'
 
-        # Buy 6 @ 100
-        ts = datetime(2000, 1, 1, 9, 0, 0, 0)
-        trade = MarketTrade.create(
-            cur, ts, 'AAPL', Decimal(6), Decimal(100), 'tech')
-        pnl = add_trade(pnl, trade, unmatched, matched)
-        save_pnl_state(cur, pnl, 'AAPL', 'tech')
-        con.commit()
+    # Buy 6 @ 100
+    ts = datetime(2000, 1, 1, 9, 0, 0, 0)
+    pnl = trade_db.add_trade(ts, ticker, Decimal(6), Decimal(100), book)
+    print(pnl)
 
-        # Buy 6 @ 106
-        ts += timedelta(seconds=1)
-        trade = MarketTrade.create(
-            cur, ts, 'AAPL', Decimal(6), Decimal(106), 'tech')
-        pnl = add_trade(pnl, trade, unmatched, matched)
-        save_pnl_state(cur, pnl, 'AAPL', 'tech')
-        con.commit()
+    # Buy 6 @ 106
+    ts += timedelta(seconds=1)
+    pnl = trade_db.add_trade(ts, ticker, Decimal(6), Decimal(106), book)
+    print(pnl)
 
-        # Buy 6 @ 103
-        ts += timedelta(seconds=1)
-        trade = MarketTrade.create(
-            cur, ts, 'AAPL', Decimal(6), Decimal(103), 'tech')
-        save_pnl_state(cur, pnl, 'AAPL', 'tech')
-        con.commit()
+    # Buy 6 @ 103
+    ts += timedelta(seconds=1)
+    pnl = trade_db.add_trade(ts, ticker, Decimal(6), Decimal(103), book)
+    print(pnl)
 
-        # Sell 9 @ 105
-        ts += timedelta(seconds=1)
-        trade = MarketTrade.create(
-            cur, ts, 'AAPL', Decimal(-9), Decimal(105), 'tech')
-        save_pnl_state(cur, pnl, 'AAPL', 'tech')
-        con.commit()
+    # Sell 9 @ 105
+    ts += timedelta(seconds=1)
+    pnl = trade_db.add_trade(ts, ticker, Decimal(-9), Decimal(105), book)
+    print(pnl)
 
-        # Sell 9 @ 107
-        ts += timedelta(seconds=1)
-        trade = MarketTrade.create(
-            cur, ts, 'AAPL', Decimal(-9), Decimal(107), 'tech')
-        save_pnl_state(cur, pnl, 'AAPL', 'tech')
-        con.commit()
+    # Sell 9 @ 107
+    ts += timedelta(seconds=1)
+    pnl = trade_db.add_trade(ts, ticker, Decimal(-9), Decimal(107), book)
+    print(pnl)
 
 
 if __name__ == '__main__':
