@@ -6,43 +6,12 @@ from datetime import datetime
 from decimal import Decimal
 
 from pymysql import Connection
-from pymysql.cursors import Cursor
 
 from ... import TradingPnl, add_trade
 
 from .market_trade import MarketTrade
 from .pools import MatchedPool, UnmatchedPool
-
-
-def save_pnl_state(cur: Cursor, pnl: TradingPnl, ticker: str, book: str) -> None:
-    cur.execute(
-        """
-        INSERT INTO trading.pnl
-        (
-            ticker,
-            book,
-            quantity,
-            cost,
-            realized
-        ) VALUES (
-            %(ticker)s,
-            %(book)s,
-            %(quantity)s,
-            %(cost)s,
-            %(realized)s
-        ) ON DUPLICATE KEY UPDATE
-            quantity = %(quantity)s,
-            cost = %(cost)s,
-            realized = %(realized)s
-        """,
-        {
-            'ticker': ticker,
-            'book': book,
-            'quantity': pnl.quantity,
-            'cost': pnl.cost,
-            'realized': pnl.realized
-        }
-    )
+from .sql import create_tables, drop_tables, save_pnl
 
 
 def _to_decimal(number: int | Decimal) -> Decimal:
@@ -80,73 +49,14 @@ class TradeDb:
                 book
             )
             pnl = add_trade(pnl, trade, unmatched, matched)
-            save_pnl_state(cur, pnl, ticker, book)
+            save_pnl(cur, pnl, ticker, book)
             self._con.commit()
             return pnl
 
     def create_tables(self) -> None:
         with self._con.cursor() as cur:
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS trading.pnl
-                (
-                    ticker      VARCHAR(32)     NOT NULL,
-                    book        VARCHAR(32)     NOT NULL,
-                    quantity    DECIMAL(12, 0)  NOT NULL,
-                    cost        DECIMAL(18, 6)  NOT NULL,
-                    realized    DECIMAL(18, 6)  NOT NULL,
-
-                    PRIMARY KEY(ticker, book)
-                )
-                """
-            )
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS trading.trade
-                (
-                    trade_id    INTEGER         NOT NULL AUTO_INCREMENT,
-                    timestamp   TIMESTAMP       NOT NULL,
-                    ticker      VARCHAR(32)     NOT NULL,
-                    quantity    DECIMAL(12, 0)  NOT NULL,
-                    price       DECIMAL(18, 6)  NOT NULL,
-                    book        VARCHAR(32)     NOT NULL,
-
-                    PRIMARY KEY(trade_id)
-                );
-                """
-            )
-
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS trading.unmatched_trade
-                (
-                    trade_id    INTEGER         NOT NULL,
-                    quantity    DECIMAL(12, 0)  NOT NULL,
-
-                    PRIMARY KEY (trade_id, quantity),
-                    FOREIGN KEY (trade_id) REFERENCES trading.trade(trade_id)
-                );
-                """
-            )
-
-            cur.execute(
-                """
-                CREATE TABLE IF NOT EXISTS trading.matched_trade
-                (
-                    opening_trade_id    INTEGER NOT NULL,
-                    closing_trade_id    INTEGER NOT NULL,
-
-                    PRIMARY KEY(opening_trade_id, closing_trade_id),
-
-                    FOREIGN KEY (opening_trade_id) REFERENCES trading.trade(trade_id),
-                    FOREIGN KEY (closing_trade_id) REFERENCES trading.trade(trade_id)
-                );
-                """
-            )
+            create_tables(cur)
 
     def drop(self) -> None:
         with self._con.cursor() as cur:
-            cur.execute("DROP TABLE trading.matched_trade;")
-            cur.execute("DROP TABLE trading.unmatched_trade;")
-            cur.execute("DROP TABLE trading.trade;")
-            cur.execute("DROP TABLE trading.pnl;")
+            drop_tables(cur)
