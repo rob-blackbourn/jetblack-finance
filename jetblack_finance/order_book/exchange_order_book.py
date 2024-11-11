@@ -1,7 +1,7 @@
 """Exchange Order Book"""
 
 from decimal import Decimal
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Dict, Iterable, List, Sequence
 
 from .abstract_types import PluginFactory
 from .constants import ALL_PLUGINS
@@ -40,7 +40,7 @@ class ExchangeOrderBook:
             price: Decimal,
             size: int,
             style: Style
-    ) -> Tuple[Optional[int], List[Fill], List[int]]:
+    ) -> tuple[int | None, List[Fill], List[int]]:
         """Add an order for a ticker.
 
         Args:
@@ -51,7 +51,7 @@ class ExchangeOrderBook:
             style (Style): The order style.
 
         Returns:
-            Tuple[Optional[int], List[Fill], List[int]]: The id of the order (if
+            tuple[int | None, List[Fill], List[int]]: The id of the order (if
             an order could be created), any fills that were generated, and a
             list of cancelled order ids.
         """

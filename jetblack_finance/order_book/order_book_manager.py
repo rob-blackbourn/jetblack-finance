@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Sequence
 
 from .abstract_types import (
     AbstractOrderBookManager,
@@ -72,8 +72,8 @@ class OrderBookManager(AbstractOrderBookManager):
 
     def depth(
             self,
-            levels: Optional[int]
-    ) -> Tuple[Sequence[AggregateOrder], Sequence[AggregateOrder]]:
+            levels: int | None
+    ) -> tuple[Sequence[AggregateOrder], Sequence[AggregateOrder]]:
         return self.bids.depth(levels), self.offers.depth(levels)
 
     def add_order(
@@ -82,7 +82,7 @@ class OrderBookManager(AbstractOrderBookManager):
             price: Decimal,
             size: int,
             style: Style
-    ) -> Tuple[Optional[int], List[Fill], List[int]]:
+    ) -> tuple[int | None, List[Fill], List[int]]:
         if style not in self._supported_styles:
             raise ValueError('unsupported style')
 
@@ -124,7 +124,7 @@ class OrderBookManager(AbstractOrderBookManager):
             price: Decimal,
             size: int,
             style: Style
-    ) -> Tuple[Optional[Order], List[Order]]:
+    ) -> tuple[Order | None, List[Order]]:
         if not self._pre_create(side, price, style):
             return None, []
 
@@ -168,7 +168,7 @@ class OrderBookManager(AbstractOrderBookManager):
             self,
             aggressor: Order,
             cancels: List[Order]
-    ) -> Tuple[List[Fill], List[Order]]:
+    ) -> tuple[List[Fill], List[Order]]:
         """Match bids against offers generating fills.
 
         Args:
@@ -176,7 +176,7 @@ class OrderBookManager(AbstractOrderBookManager):
             cancels (List[Order]): A list of already cancelled orders.
 
         Returns:
-            Tuple[List[Order], List[Order]: The fills and cancels.
+            tuple[List[Order], List[Order]: The fills and cancels.
         """
         fills: List[Fill] = []
         while self._can_match:
@@ -286,7 +286,7 @@ class OrderBookManager(AbstractOrderBookManager):
 
         return fill
 
-    def _fillable_sides(self, aggressor: Order) -> Tuple[AggregateOrderSide, AggregateOrderSide]:
+    def _fillable_sides(self, aggressor: Order) -> tuple[AggregateOrderSide, AggregateOrderSide]:
         if (
             aggressor.side == Side.SELL and
             self.stop_bids and
