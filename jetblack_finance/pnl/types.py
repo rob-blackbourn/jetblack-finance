@@ -49,7 +49,31 @@ class IMatchedPool(Protocol):
         ...
 
 
+class PnlStrip(NamedTuple):
+    quantity: Decimal
+    avg_cost: Decimal
+    price: Decimal
+    realized: Decimal
+    unrealized: Decimal
+
+
 class IPnlState(NamedTuple):
     quantity: Decimal
     cost: Decimal
     realized: Decimal
+
+    @property
+    def avg_cost(self) -> Decimal:
+        return Decimal(0) if self.quantity == 0 else -self.cost / self.quantity
+
+    def unrealized(self, price: Decimal | int) -> Decimal:
+        return self.quantity * price + self.cost
+
+    def strip(self, price: Decimal | int) -> PnlStrip:
+        return PnlStrip(
+            self.quantity,
+            self.avg_cost,
+            Decimal(price),
+            self.realized,
+            self.unrealized(price)
+        )
