@@ -40,12 +40,12 @@ class UnmatchedPool:
         def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, partial_trade: IPnlTrade) -> None:
-            self._pool = tuple((*self._pool, partial_trade))
+        def push(self, pnl_trade: IPnlTrade) -> None:
+            self._pool = tuple((*self._pool, pnl_trade))
 
-        def pop(self, quantity: Decimal, cost: Decimal) -> IPnlTrade:
-            partial_trade, self._pool = (self._pool[0], self._pool[1:])
-            return partial_trade
+        def pop(self, _quantity: Decimal, _cost: Decimal) -> IPnlTrade:
+            trade, self._pool = (self._pool[0], self._pool[1:])
+            return trade
 
         def __len__(self) -> int:
             return len(self._pool)
@@ -64,12 +64,12 @@ class UnmatchedPool:
         def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, partial_trade: IPnlTrade) -> None:
-            self._pool = tuple((*self._pool, partial_trade))
+        def push(self, pnl_trade: IPnlTrade) -> None:
+            self._pool = tuple((*self._pool, pnl_trade))
 
-        def pop(self, quantity: Decimal, cost: Decimal) -> IPnlTrade:
-            partial_trade, self._pool = (self._pool[-1], self._pool[:-1])
-            return partial_trade
+        def pop(self, _quantity: Decimal, _cost: Decimal) -> IPnlTrade:
+            trade, self._pool = (self._pool[-1], self._pool[:-1])
+            return trade
 
         def __len__(self) -> int:
             return len(self._pool)
@@ -88,17 +88,17 @@ class UnmatchedPool:
         def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, partial_trade: IPnlTrade) -> None:
-            self._pool = tuple((*self._pool, partial_trade))
+        def push(self, pnl_trade: IPnlTrade) -> None:
+            self._pool = tuple((*self._pool, pnl_trade))
 
-        def pop(self, quantity: Decimal, cost: Decimal) -> IPnlTrade:
+        def pop(self, quantity: Decimal, _cost: Decimal) -> IPnlTrade:
             self._pool = sorted(self._pool, key=lambda x: x.trade.price)
-            order, self._pool = (
+            trade, self._pool = (
                 (self._pool[0], self._pool[1:])
                 if quantity >= 0
                 else (self._pool[-1], self._pool[:-1])
             )
-            return order
+            return trade
 
         def __len__(self) -> int:
             return len(self._pool)
@@ -117,17 +117,17 @@ class UnmatchedPool:
         def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, partial_trade: IPnlTrade) -> None:
-            self._pool = tuple((*self._pool, partial_trade))
+        def push(self, pnl_trade: IPnlTrade) -> None:
+            self._pool = tuple((*self._pool, pnl_trade))
 
-        def pop(self, quantity: Decimal, cost: Decimal) -> IPnlTrade:
+        def pop(self, quantity: Decimal, _cost: Decimal) -> IPnlTrade:
             self._pool = sorted(self._pool, key=lambda x: x.trade.price)
-            order, self._pool = (
+            trade, self._pool = (
                 (self._pool[-1], self._pool[:-1])
                 if quantity > 0
                 else (self._pool[0], self._pool[1:])
             )
-            return order
+            return trade
 
         def __len__(self) -> int:
             return len(self._pool)

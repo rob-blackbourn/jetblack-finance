@@ -169,7 +169,7 @@ def _reduce_position(
         )
 
     if reducing_trade is not None and reducing_trade.quantity != 0:
-        pnl = add_pnl_trade(
+        pnl = _add_pnl_trade(
             pnl,
             reducing_trade,
             unmatched,
@@ -179,7 +179,7 @@ def _reduce_position(
     return pnl
 
 
-def add_pnl_trade(
+def _add_pnl_trade(
         pnl: TradingPnl,
         trade: IPnlTrade,
         unmatched: IUnmatchedPool,
@@ -213,7 +213,7 @@ def add_trade(
         unmatched: IUnmatchedPool,
         matched: IMatchedPool
 ) -> TradingPnl:
-    return add_pnl_trade(
+    return _add_pnl_trade(
         pnl,
         IPnlTrade(market_trade.quantity, market_trade),
         unmatched,
