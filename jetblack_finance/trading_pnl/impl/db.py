@@ -13,7 +13,7 @@ from pymysql.cursors import Cursor, DictCursor
 
 from jetblack_finance.trading_pnl import (
     IMarketTrade,
-    IPnlState,
+    TradingPnl,
     IPnlTrade,
     IMatchedPool,
     IUnmatchedPool,
@@ -259,7 +259,7 @@ class UnmatchedPool:
             return 0 if row is None else row['count']
 
 
-def save_pnl_state(cur: Cursor, pnl: IPnlState, ticker: str, book: str) -> None:
+def save_pnl_state(cur: Cursor, pnl: TradingPnl, ticker: str, book: str) -> None:
     cur.execute(
         """
         INSERT INTO trading.pnl
@@ -294,7 +294,7 @@ class TradeDb:
 
     def __init__(self, con: Connection) -> None:
         self._con = con
-        self._pnl: dict[tuple[str, str], IPnlState] = {}
+        self._pnl: dict[tuple[str, str], TradingPnl] = {}
 
     def add_trade(
         self,
@@ -303,13 +303,13 @@ class TradeDb:
         quantity: Decimal,
         price: Decimal,
         book: str
-    ) -> IPnlState:
+    ) -> TradingPnl:
         with self._con.cursor() as cur:
             matched = MatchedPool(cur, ticker, book)
             unmatched = UnmatchedPool.Fifo(cur, ticker, book)
             pnl = self._pnl.get(
                 (ticker, book),
-                IPnlState(Decimal(0), Decimal(0), Decimal(0))
+                TradingPnl(Decimal(0), Decimal(0), Decimal(0))
             )
 
             trade = MarketTrade.create(

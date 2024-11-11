@@ -57,7 +57,7 @@ class PnlStrip(NamedTuple):
     unrealized: Decimal
 
 
-class IPnlState(NamedTuple):
+class TradingPnl(NamedTuple):
     quantity: Decimal
     cost: Decimal
     realized: Decimal

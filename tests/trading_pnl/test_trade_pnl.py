@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from jetblack_finance.trading_pnl import IMarketTrade, IPnlState, IPnlTrade, add_trade
+from jetblack_finance.trading_pnl import IMarketTrade, TradingPnl, IPnlTrade, add_trade
 from jetblack_finance.trading_pnl.impl.simple import (
     MatchedPool,
     UnmatchedPool,
@@ -40,7 +40,7 @@ def test_long_to_short_with_splits_best_price():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.BestPrice()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     assert pnl.quantity == 0
     assert pnl.cost == 0
@@ -82,7 +82,7 @@ def test_long_to_short_with_splits_worst_price():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.WorstPrice()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     # Buy 6 at 100
     pnl = add_trade(pnl, MarketTrade(6, 100), unmatched, matched)
@@ -114,7 +114,7 @@ def test_long_to_short_with_splits_fifo():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     # Buy 6 @ 100
     pnl = add_trade(pnl, MarketTrade(6, 100), unmatched, matched)
@@ -146,7 +146,7 @@ def test_long_to_short_with_splits_lifo():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Lifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     # Buy 6 @ 100
     pnl = add_trade(pnl, MarketTrade(6, 100), unmatched, matched)
@@ -178,7 +178,7 @@ def test_long_to_short_fifo_with_profit():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(1, 100), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(-1, 102), unmatched, matched)
@@ -200,7 +200,7 @@ def test_short_to_long_fifo_with_profit():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(-1, 102), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(1, 100), unmatched, matched)
@@ -221,7 +221,7 @@ def test_long_to_short_fifo_with_loss():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(1, 102), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(-1, 100), unmatched, matched)
@@ -242,7 +242,7 @@ def test_short_to_long_fifo_with_loss():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(-1, 100), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(1, 102), unmatched, matched)
@@ -262,7 +262,7 @@ def test_long_sell_fifo_through_flat():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(1, 101), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(-2, 102), unmatched, matched)
@@ -284,7 +284,7 @@ def test_short_buy_fifo_through_flat():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(-1, 102), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(2, 101), unmatched, matched)
@@ -306,7 +306,7 @@ def test_one_buy_many_sells_fifo():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(10, 101), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(-5, 102), unmatched, matched)
@@ -334,7 +334,7 @@ def test_pnl():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     # Buy 10 @ 100
     pnl = add_trade(pnl, MarketTrade(10, 100), unmatched, matched)
@@ -366,7 +366,7 @@ def test_many_buys_one_sell_fifo():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(1, 100), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(1, 102), unmatched, matched)
@@ -402,7 +402,7 @@ def test_many_buys_one_sell_lifo():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Lifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(1, 100), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(1, 102), unmatched, matched)
@@ -438,7 +438,7 @@ def test_many_buys_one_sell_best_price():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.BestPrice()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(1, 100), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(1, 102), unmatched, matched)
@@ -474,7 +474,7 @@ def test_many_sells_one_buy_best_price():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.BestPrice()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(-1, 100), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(-1, 102), unmatched, matched)
@@ -513,7 +513,7 @@ def test_many_buys_one_sell_worst_price():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.WorstPrice()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(1, 100), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(1, 102), unmatched, matched)
@@ -552,7 +552,7 @@ def test_many_sells_one_buy_worst_price():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.WorstPrice()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(pnl, MarketTrade(-1, 100), unmatched, matched)
     pnl = add_trade(pnl, MarketTrade(-1, 102), unmatched, matched)
@@ -590,7 +590,7 @@ def test_fraction_quantities():
 
     matched = MatchedPool()
     unmatched = UnmatchedPool.Fifo()
-    pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
+    pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
 
     pnl = add_trade(
         pnl,

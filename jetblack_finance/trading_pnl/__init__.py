@@ -3,7 +3,7 @@
 from .types import (
     IPnlTrade,
     IMarketTrade,
-    IPnlState,
+    TradingPnl,
     IMatchedPool,
     IUnmatchedPool
 )
@@ -11,7 +11,7 @@ from .algorithm import add_pnl_trade, add_trade
 
 __all__ = [
     'IMarketTrade',
-    'IPnlState',
+    'TradingPnl',
     'IPnlTrade',
     'IMatchedPool',
     'IUnmatchedPool',
