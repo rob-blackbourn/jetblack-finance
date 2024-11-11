@@ -29,27 +29,27 @@ def main():
 
     # Buy 6 @ 100
     ts = datetime(2000, 1, 1, 9, 0, 0, 0)
-    pnl = trade_db.add_trade(ts, ticker, Decimal(6), Decimal(100), book)
+    pnl = trade_db.add_trade(ts, ticker, 6, 100, book)
     print(pnl)
 
     # Buy 6 @ 106
     ts += timedelta(seconds=1)
-    pnl = trade_db.add_trade(ts, ticker, Decimal(6), Decimal(106), book)
+    pnl = trade_db.add_trade(ts, ticker, 6, 106, book)
     print(pnl)
 
     # Buy 6 @ 103
     ts += timedelta(seconds=1)
-    pnl = trade_db.add_trade(ts, ticker, Decimal(6), Decimal(103), book)
+    pnl = trade_db.add_trade(ts, ticker, 6, 103, book)
     print(pnl)
 
     # Sell 9 @ 105
     ts += timedelta(seconds=1)
-    pnl = trade_db.add_trade(ts, ticker, Decimal(-9), Decimal(105), book)
+    pnl = trade_db.add_trade(ts, ticker, -9, 105, book)
     print(pnl)
 
     # Sell 9 @ 107
     ts += timedelta(seconds=1)
-    pnl = trade_db.add_trade(ts, ticker, Decimal(-9), Decimal(107), book)
+    pnl = trade_db.add_trade(ts, ticker, -9, 107, book)
     print(pnl)
 
 

@@ -288,6 +288,10 @@ def save_pnl_state(cur: Cursor, pnl: TradingPnl, ticker: str, book: str) -> None
     )
 
 
+def _to_decimal(number: int | Decimal) -> Decimal:
+    return number if isinstance(number, Decimal) else Decimal(number)
+
+
 class TradeDb:
 
     def __init__(self, con: Connection) -> None:
@@ -298,8 +302,8 @@ class TradeDb:
         self,
         timestamp: datetime,
         ticker: str,
-        quantity: Decimal,
-        price: Decimal,
+        quantity: int | Decimal,
+        price: int | Decimal,
         book: str
     ) -> TradingPnl:
         with self._con.cursor() as cur:
@@ -314,8 +318,8 @@ class TradeDb:
                 cur,
                 timestamp,
                 ticker,
-                quantity,
-                price,
+                _to_decimal(quantity),
+                _to_decimal(price),
                 book
             )
             pnl = add_trade(pnl, trade, unmatched, matched)
