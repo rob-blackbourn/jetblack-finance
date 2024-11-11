@@ -3,7 +3,7 @@
 
 from abc import abstractmethod
 from decimal import Decimal
-from typing import Protocol, runtime_checkable
+from typing import NamedTuple, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -20,17 +20,9 @@ class IMarketTrade(Protocol):
         ...
 
 
-class IPnlTrade(Protocol):
-
-    @property
-    @abstractmethod
-    def trade(self) -> IMarketTrade:
-        ...
-
-    @property
-    @abstractmethod
-    def quantity(self) -> Decimal:
-        ...
+class IPnlTrade(NamedTuple):
+    quantity: Decimal
+    trade: IMarketTrade
 
 
 class IUnmatchedPool(Protocol):
@@ -57,29 +49,7 @@ class IMatchedPool(Protocol):
         ...
 
 
-class IPnlState(Protocol):
-
-    @property
-    @abstractmethod
-    def quantity(self) -> Decimal:
-        ...
-
-    @property
-    @abstractmethod
-    def cost(self) -> Decimal:
-        ...
-
-    @property
-    @abstractmethod
-    def realized(self) -> Decimal:
-        ...
-
-    @property
-    @abstractmethod
-    def unmatched(self) -> IUnmatchedPool:
-        ...
-
-    @property
-    @abstractmethod
-    def matched(self) -> IMatchedPool:
-        ...
+class IPnlState(NamedTuple):
+    quantity: Decimal
+    cost: Decimal
+    realized: Decimal

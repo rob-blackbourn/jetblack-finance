@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from abc import abstractmethod
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Generic, Optional, TypeVar, cast
+from typing import Optional, cast
 
 import pymysql
 import pymysql.cursors
@@ -17,18 +16,17 @@ from jetblack_finance.pnl import (
     IPnlState,
     IPnlTrade,
     IMatchedPool,
-    IUnmatchedPool
+    IUnmatchedPool,
+    add_trade
 )
-from jetblack_finance.pnl.pnl_strip import PnlStrip
 from jetblack_finance.pnl.algorithm import add_trade
-
-T = TypeVar('T', bound='ABCPnl')
 
 
 class MarketTrade(IMarketTrade):
 
     def __init__(
-        self, trade_id: int,
+        self,
+        trade_id: int,
         timestamp: datetime,
         ticker: str,
         quantity: Decimal,
@@ -92,197 +90,87 @@ class MarketTrade(IMarketTrade):
         # TODO: check that quantity and price are decimals.
         return MarketTrade(trade_id, row['timestamp'], row['ticker'], row['quantity'], row['price'], row['book'])
 
-
-class PnlTrade(IPnlTrade):
-
-    def __init__(
-            self,
-            trade: IMarketTrade,
-            quantity: Decimal | int
-    ) -> None:
-        self._trade = trade
-        self._quantity = Decimal(quantity)
-
-    @property
-    def trade(self) -> IMarketTrade:
-        return self._trade
-
-    @property
-    def quantity(self) -> Decimal:
-        return self._quantity
-
-    def __eq__(self, value: object) -> bool:
-        return (
-            isinstance(value, PnlTrade) and
-            self._trade == value._trade and
-            self.quantity == value.quantity
-        )
-
-    def __repr__(self) -> str:
-        return f"{self.quantity} (of {self._trade.quantity}) @ {self.trade.price}"
-
-
-class ABCPnl(IPnlState, Generic[T]):
-
-    class MatchedPool(IMatchedPool):
-
-        def __init__(self, cur: Cursor, ticker: str, book: str) -> None:
-            self._cur = cur
-            self._ticker = ticker
-            self._book = book
-
-        def push(self, opening: IPnlTrade, closing: IPnlTrade) -> None:
-            self._cur.execute(
-                """
-                INSERT INTO trading.matched_trade(
-                    opening_trade_id,
-                    closing_trade_id
-                ) VALUES (
-                    %s,
-                    %s
-                )
-                """,
-                (
-                    cast(MarketTrade, opening.trade).trade_id,
-                    cast(MarketTrade, closing.trade).trade_id
-                )
-            )
-
-        def __len__(self) -> int:
-            self._cur.execute(
-                """
-                SELECT
-                    COUNT(mt.*) AS count
-                FROM
-                    trading.matched_trade AS mt
-                JOIN
-                    trading.trade AS t
-                ON
-                    t.trading_id = mt.opening_trade_id
-                AND
-                    t.ticker = %(ticker)s
-                AND
-                    t.book = %(book)s
-                """,
-                {
-                    'ticker': self._ticker,
-                    'book': self._book
-                }
-            )
-            row = cast(dict | None, self._cur.fetchone())
-            return 0 if row is None else row['count']
-
-    def __init__(
-            self,
-            cur: Cursor,
-            ticker: str,
-            book: str,
-            quantity: Decimal | int,
-            cost: Decimal | int,
-            realized: Decimal | int,
-            unmatched: IUnmatchedPool,
-            matched: IMatchedPool
-    ) -> None:
-        self._cur = cur
-        self._ticker = ticker
-        self._book = book
-        self._quantity = Decimal(quantity)
-        self._cost = Decimal(cost)
-        self._realized = Decimal(realized)
-        self._unmatched = unmatched
-        self._matched = matched
-
-    def add(
-        self,
+    @classmethod
+    def create(
+        cls,
+        cur: Cursor,
         timestamp: datetime,
+        ticker: str,
         quantity: Decimal,
         price: Decimal,
-    ) -> T:
-        self._cur.execute(
+        book: str
+    ) -> MarketTrade:
+        cur.execute(
             """
             INSERT INTO trading.trade(timestamp, ticker, quantity, price, book)
             VALUES (%s, %s, %s, %s, %s)
             """,
-            (timestamp.isoformat(), self._ticker, quantity, price, self._book)
+            (timestamp.isoformat(), ticker, quantity, price, book)
         )
-        trade_id = self._cur.lastrowid
+        trade_id = cur.lastrowid
         trade = MarketTrade(
             trade_id,
             timestamp,
-            self._ticker,
+            ticker,
             quantity,
             price,
-            self._book
+            book
+        )
+        return trade
+
+
+class MatchedPool(IMatchedPool):
+
+    def __init__(self, cur: Cursor, ticker: str, book: str) -> None:
+        self._cur = cur
+        self._ticker = ticker
+        self._book = book
+
+    def push(self, opening: IPnlTrade, closing: IPnlTrade) -> None:
+        self._cur.execute(
+            """
+            INSERT INTO trading.matched_trade(
+                opening_trade_id,
+                closing_trade_id
+            ) VALUES (
+                %s,
+                %s
+            )
+            """,
+            (
+                cast(MarketTrade, opening.trade).trade_id,
+                cast(MarketTrade, closing.trade).trade_id
+            )
         )
 
-        state = add_trade(
-            self,
-            trade,
-            self.create_pnl,
-            self.create_partial_trade,
+    def __len__(self) -> int:
+        self._cur.execute(
+            """
+            SELECT
+                COUNT(mt.*) AS count
+            FROM
+                trading.matched_trade AS mt
+            JOIN
+                trading.trade AS t
+            ON
+                t.trading_id = mt.opening_trade_id
+            AND
+                t.ticker = %(ticker)s
+            AND
+                t.book = %(book)s
+            """,
+            {
+                'ticker': self._ticker,
+                'book': self._book
+            }
         )
-        return cast(T, state)
-
-    @abstractmethod
-    def create_pnl(
-        self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: IUnmatchedPool,
-        matched: IMatchedPool
-    ) -> IPnlState:
-        ...
-
-    def create_partial_trade(self, trade: IMarketTrade, quantity: Decimal) -> IPnlTrade:
-        return PnlTrade(trade, quantity)
-
-    @property
-    def quantity(self) -> Decimal:
-        return self._quantity
-
-    @property
-    def cost(self) -> Decimal:
-        return self._cost
-
-    @property
-    def realized(self) -> Decimal:
-        return self._realized
-
-    @property
-    def unmatched(self) -> IUnmatchedPool:
-        return self._unmatched
-
-    @property
-    def matched(self) -> IMatchedPool:
-        return self._matched
-
-    @property
-    def avg_cost(self) -> Decimal:
-        if self.quantity == 0:
-            return Decimal(0)
-        return -self.cost / self.quantity
-
-    def unrealized(self, price: Decimal) -> Decimal:
-        return self.quantity * price + self.cost
-
-    def strip(self, price: Decimal | int) -> PnlStrip:
-        return PnlStrip(
-            self.quantity,
-            self.avg_cost,
-            Decimal(price),
-            self.realized,
-            self.unrealized(Decimal(price))
-        )
-
-    def __repr__(self) -> str:
-        return f"{self.quantity} @ {self.cost} + {self.realized}"
+        row = cast(dict | None, self._cur.fetchone())
+        return 0 if row is None else row['count']
 
 
-class FifoPnl(ABCPnl['FifoPnl']):
+class UnmatchedPool:
 
-    class UnmatchedPool(IUnmatchedPool):
-
+    class Fifo(IUnmatchedPool):
         def __init__(self, cur: Cursor, ticker: str, book: str) -> None:
             self._cur = cur
             self._ticker = ticker
@@ -345,7 +233,7 @@ class FifoPnl(ABCPnl['FifoPnl']):
             market_trade = MarketTrade.read(self._cur, row['trade_id'])
             if market_trade is None:
                 raise RuntimeError("unable to find market trade")
-            pnl_trade = PnlTrade(market_trade, row['quantity'])
+            pnl_trade = IPnlTrade(row['quantity'], market_trade)
             return pnl_trade
 
         def __len__(self) -> int:
@@ -372,92 +260,72 @@ class FifoPnl(ABCPnl['FifoPnl']):
             row = cast(dict | None, self._cur.fetchone())
             return 0 if row is None else row['count']
 
-    @classmethod
-    def create(cls, cur: Cursor, ticker: str, book: str) -> FifoPnl:
-        cur.execute(
-            """
-            SELECT
-                quantity,
-                cost,
-                realized
-            FROM
-                trading.pnl
-            WHERE
-                ticker = %s
-            AND
-                book = %s
-            """,
-            (ticker, book)
-        )
-        row = cast(dict | None, cur.fetchone())
-        quantity, cost, realized = (
-            (Decimal(0), Decimal(0), Decimal(0))
-            if row is None
-            else (row['quantity'], row['cost'], row['realized'])
-        )
-        return FifoPnl(
-            cur,
+
+def save_pnl_state(cur: Cursor, pnl: IPnlState, ticker: str, book: str) -> None:
+    cur.execute(
+        """
+        INSERT INTO trading.pnl
+        (
             ticker,
             book,
             quantity,
             cost,
-            realized,
-            FifoPnl.UnmatchedPool(cur, ticker, book),
-            FifoPnl.MatchedPool(cur, ticker, book)
-        )
-
-    def create_pnl(
-            self,
-            quantity: Decimal,
-            cost: Decimal,
-            realized: Decimal,
-            unmatched: IUnmatchedPool,
-            matched: IMatchedPool
-    ) -> FifoPnl:
-        self._cur.execute(
-            """
-            INSERT INTO trading.pnl
-            (
-                ticker,
-                book,
-                quantity,
-                cost,
-                realized
-            ) VALUES (
-                %(ticker)s,
-                %(book)s,
-                %(quantity)s,
-                %(cost)s,
-                %(realized)s
-            ) ON DUPLICATE KEY UPDATE
-                quantity = %(quantity)s,
-                cost = %(cost)s,
-                realized = %(realized)s
-            """,
-            {
-                'ticker': self._ticker,
-                'book': self._book,
-                'quantity': quantity,
-                'cost': cost,
-                'realized': realized
-            }
-        )
-        return FifoPnl(
-            self._cur,
-            self._ticker,
-            self._book,
-            quantity,
-            cost,
-            realized,
-            unmatched,
-            matched
-        )
+            realized
+        ) VALUES (
+            %(ticker)s,
+            %(book)s,
+            %(quantity)s,
+            %(cost)s,
+            %(realized)s
+        ) ON DUPLICATE KEY UPDATE
+            quantity = %(quantity)s,
+            cost = %(cost)s,
+            realized = %(realized)s
+        """,
+        {
+            'ticker': ticker,
+            'book': book,
+            'quantity': pnl.quantity,
+            'cost': pnl.cost,
+            'realized': pnl.realized
+        }
+    )
 
 
 class TradeDb:
 
     def __init__(self, con: Connection) -> None:
         self._con = con
+        self._pnl: dict[tuple[str, str], IPnlState] = {}
+
+    def add_trade(
+        self,
+        timestamp: datetime,
+        ticker: str,
+        quantity: Decimal,
+        price: Decimal,
+        book: str
+    ) -> IPnlState:
+        with self._con.cursor() as cur:
+            matched = MatchedPool(cur, ticker, book)
+            unmatched = UnmatchedPool.Fifo(cur, ticker, book)
+            pnl = self._pnl.get(
+                (ticker, book),
+                IPnlState(Decimal(0), Decimal(0), Decimal(0))
+            )
+
+            trade = MarketTrade.create(
+                cur,
+                timestamp,
+                ticker,
+                quantity,
+                price,
+                book
+            )
+            pnl = add_trade(pnl, trade, unmatched, matched)
+            save_pnl_state(cur, pnl, ticker, book)
+            self._con.commit()
+            return pnl
 
     def create_tables(self) -> None:
         with self._con.cursor() as cur:
@@ -542,31 +410,45 @@ def main():
     trade_db.create_tables()
 
     with con.cursor() as cur:
-        pnl = FifoPnl.create(cur, 'AAPL', 'tech')
+        matched = MatchedPool(cur, 'AAPL', 'tech')
+        unmatched = UnmatchedPool.Fifo(cur, 'AAPL', 'tech')
+        pnl = IPnlState(Decimal(0), Decimal(0), Decimal(0))
 
         # Buy 6 @ 100
         ts = datetime(2000, 1, 1, 9, 0, 0, 0)
-        pnl = pnl.add(ts, Decimal(6), Decimal(100))
+        trade = MarketTrade.create(
+            cur, ts, 'AAPL', Decimal(6), Decimal(100), 'tech')
+        pnl = add_trade(pnl, trade, unmatched, matched)
+        save_pnl_state(cur, pnl, 'AAPL', 'tech')
         con.commit()
 
         # Buy 6 @ 106
         ts += timedelta(seconds=1)
-        pnl = pnl.add(ts, Decimal(6), Decimal(106))
+        trade = MarketTrade.create(
+            cur, ts, 'AAPL', Decimal(6), Decimal(106), 'tech')
+        pnl = add_trade(pnl, trade, unmatched, matched)
+        save_pnl_state(cur, pnl, 'AAPL', 'tech')
         con.commit()
 
         # Buy 6 @ 103
         ts += timedelta(seconds=1)
-        pnl = pnl.add(ts, Decimal(6), Decimal(103))
+        trade = MarketTrade.create(
+            cur, ts, 'AAPL', Decimal(6), Decimal(103), 'tech')
+        save_pnl_state(cur, pnl, 'AAPL', 'tech')
         con.commit()
 
         # Sell 9 @ 105
         ts += timedelta(seconds=1)
-        pnl = pnl.add(ts, Decimal(-9), Decimal(105))
+        trade = MarketTrade.create(
+            cur, ts, 'AAPL', Decimal(-9), Decimal(105), 'tech')
+        save_pnl_state(cur, pnl, 'AAPL', 'tech')
         con.commit()
 
         # Sell 9 @ 107
         ts += timedelta(seconds=1)
-        pnl = pnl.add(ts, Decimal(-9), Decimal(107))
+        trade = MarketTrade.create(
+            cur, ts, 'AAPL', Decimal(-9), Decimal(107), 'tech')
+        save_pnl_state(cur, pnl, 'AAPL', 'tech')
         con.commit()
 
 

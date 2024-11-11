@@ -7,6 +7,7 @@ from .types import (
     IMatchedPool,
     IUnmatchedPool
 )
+from .algorithm import add_pnl_trade, add_trade
 
 __all__ = [
     'IMarketTrade',
@@ -14,4 +15,6 @@ __all__ = [
     'IPnlTrade',
     'IMatchedPool',
     'IUnmatchedPool',
+    'add_pnl_trade',
+    'add_trade'
 ]

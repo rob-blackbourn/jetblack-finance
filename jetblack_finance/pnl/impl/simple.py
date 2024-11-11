@@ -2,158 +2,40 @@
 
 from __future__ import annotations
 
-from abc import abstractmethod
 from decimal import Decimal
-from typing import Any, Generic, Sequence, TypeVar, cast
+from typing import Sequence
 
 from ..types import (
     IPnlTrade,
-    IMarketTrade,
-    IPnlState,
     IMatchedPool,
     IUnmatchedPool
 )
-from ..pnl_strip import PnlStrip
-from ..algorithm import add_trade
-
-T = TypeVar('T', bound='ABCPnl')
 
 
-class PnlTrade(IPnlTrade):
+class MatchedPool(IMatchedPool):
 
-    def __init__(
-            self,
-            trade: IMarketTrade,
-            quantity: Decimal | int
-    ) -> None:
-        self._trade = trade
-        self._quantity = Decimal(quantity)
+    def __init__(self, pool: Sequence[tuple[IPnlTrade, IPnlTrade]] = ()) -> None:
+        self._pool = pool
 
-    @property
-    def trade(self) -> IMarketTrade:
-        return self._trade
+    def push(self, opening: IPnlTrade, closing: IPnlTrade) -> None:
+        matched_trade = (opening, closing)
+        self._pool = tuple((*self._pool, matched_trade))
 
-    @property
-    def quantity(self) -> Decimal:
-        return self._quantity
+    def __len__(self) -> int:
+        return len(self._pool)
 
     def __eq__(self, value: object) -> bool:
         return (
-            isinstance(value, PnlTrade) and
-            self._trade == value._trade and
-            self.quantity == value.quantity
+            isinstance(value, MatchedPool) and
+            value._pool == self._pool
         )
 
-    def __repr__(self) -> str:
-        return f"{self.quantity} (of {self._trade.quantity}) @ {self.trade.price}"
+    def __str__(self) -> str:
+        return str(self._pool)
 
 
-class ABCPnl(IPnlState, Generic[T]):
-
-    class MatchedPool(IMatchedPool):
-
-        def __init__(self, pool: Sequence[tuple[IPnlTrade, IPnlTrade]] = ()) -> None:
-            self._pool = pool
-
-        def push(self, opening: IPnlTrade, closing: IPnlTrade) -> None:
-            matched_trade = (opening, closing)
-            self._pool = tuple((*self._pool, matched_trade))
-
-        def __len__(self) -> int:
-            return len(self._pool)
-
-        def __eq__(self, value: object) -> bool:
-            return (
-                isinstance(value, FifoPnl.MatchedPool) and
-                value._pool == self._pool
-            )
-
-        def __str__(self) -> str:
-            return str(self._pool)
-
-    def __init__(
-            self,
-            quantity: Decimal | int,
-            cost: Decimal | int,
-            realized: Decimal | int,
-            unmatched: IUnmatchedPool,
-            matched: IMatchedPool
-    ) -> None:
-        self._quantity = Decimal(quantity)
-        self._cost = Decimal(cost)
-        self._realized = Decimal(realized)
-        self._unmatched = unmatched
-        self._matched = matched
-
-    def __add__(self, trade: Any) -> T:
-        assert isinstance(trade, IMarketTrade)
-        state = add_trade(
-            self,
-            trade,
-            self.create_pnl,
-            self.create_partial_trade,
-        )
-        return cast(T, state)
-
-    @abstractmethod
-    def create_pnl(
-        self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: IUnmatchedPool,
-        matched: IMatchedPool
-    ) -> IPnlState:
-        ...
-
-    def create_partial_trade(self, trade: IMarketTrade, quantity: Decimal) -> IPnlTrade:
-        return PnlTrade(trade, quantity)
-
-    @property
-    def quantity(self) -> Decimal:
-        return self._quantity
-
-    @property
-    def cost(self) -> Decimal:
-        return self._cost
-
-    @property
-    def realized(self) -> Decimal:
-        return self._realized
-
-    @property
-    def unmatched(self) -> IUnmatchedPool:
-        return self._unmatched
-
-    @property
-    def matched(self) -> IMatchedPool:
-        return self._matched
-
-    @property
-    def avg_cost(self) -> Decimal:
-        if self.quantity == 0:
-            return Decimal(0)
-        return -self.cost / self.quantity
-
-    def unrealized(self, price: Decimal) -> Decimal:
-        return self.quantity * price + self.cost
-
-    def strip(self, price: Decimal | int) -> PnlStrip:
-        return PnlStrip(
-            self.quantity,
-            self.avg_cost,
-            Decimal(price),
-            self.realized,
-            self.unrealized(Decimal(price))
-        )
-
-    def __repr__(self) -> str:
-        return f"{self.quantity} @ {self.cost} + {self.realized}"
-
-
-class FifoPnl(ABCPnl['FifoPnl']):
-
-    class UnmatchedPool(IUnmatchedPool):
+class UnmatchedPool:
+    class Fifo(IUnmatchedPool):
 
         def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
@@ -170,33 +52,14 @@ class FifoPnl(ABCPnl['FifoPnl']):
 
         def __eq__(self, value: object) -> bool:
             return (
-                isinstance(value, FifoPnl.UnmatchedPool) and
+                isinstance(value, UnmatchedPool.Fifo) and
                 value._pool == self._pool
             )
 
         def __str__(self) -> str:
             return str(self._pool)
 
-    def create_pnl(
-            self,
-            quantity: Decimal,
-            cost: Decimal,
-            realized: Decimal,
-            unmatched: IUnmatchedPool,
-            matched: IMatchedPool
-    ) -> FifoPnl:
-        return FifoPnl(
-            quantity,
-            cost,
-            realized,
-            unmatched,
-            matched
-        )
-
-
-class LifoPnl(ABCPnl):
-
-    class UnmatchedPool(IUnmatchedPool):
+    class Lifo(IUnmatchedPool):
 
         def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
@@ -213,33 +76,14 @@ class LifoPnl(ABCPnl):
 
         def __eq__(self, value: object) -> bool:
             return (
-                isinstance(value, LifoPnl.UnmatchedPool) and
+                isinstance(value, UnmatchedPool.Lifo) and
                 value._pool == self._pool
             )
 
         def __str__(self) -> str:
             return str(self._pool)
 
-    def create_pnl(
-        self,
-        quantity: Decimal,
-        cost: Decimal,
-        realized: Decimal,
-        unmatched: IUnmatchedPool,
-        matched: IMatchedPool
-    ) -> LifoPnl:
-        return LifoPnl(
-            quantity,
-            cost,
-            realized,
-            unmatched,
-            matched
-        )
-
-
-class BestPricePnl(ABCPnl):
-
-    class UnmatchedPool(IUnmatchedPool):
+    class BestPrice(IUnmatchedPool):
 
         def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
@@ -261,33 +105,14 @@ class BestPricePnl(ABCPnl):
 
         def __eq__(self, value: object) -> bool:
             return (
-                isinstance(value, BestPricePnl.UnmatchedPool) and
+                isinstance(value, UnmatchedPool.BestPrice) and
                 value._pool == self._pool
             )
 
         def __str__(self) -> str:
             return str(self._pool)
 
-    def create_pnl(
-            self,
-            quantity: Decimal,
-            cost: Decimal,
-            realized: Decimal,
-            unmatched: IUnmatchedPool,
-            matched: IMatchedPool
-    ) -> BestPricePnl:
-        return BestPricePnl(
-            quantity,
-            cost,
-            realized,
-            unmatched,
-            matched
-        )
-
-
-class WorstPricePnl(ABCPnl):
-
-    class UnmatchedPool(IUnmatchedPool):
+    class WorstPrice(IUnmatchedPool):
 
         def __init__(self, pool: Sequence[IPnlTrade] = ()) -> None:
             self._pool = pool
@@ -309,25 +134,9 @@ class WorstPricePnl(ABCPnl):
 
         def __eq__(self, value: object) -> bool:
             return (
-                isinstance(value, WorstPricePnl.UnmatchedPool) and
+                isinstance(value, UnmatchedPool.WorstPrice) and
                 value._pool == self._pool
             )
 
         def __str__(self) -> str:
             return str(self._pool)
-
-    def create_pnl(
-            self,
-            quantity: Decimal,
-            cost: Decimal,
-            realized: Decimal,
-            unmatched: IUnmatchedPool,
-            matched: IMatchedPool
-    ) -> WorstPricePnl:
-        return WorstPricePnl(
-            quantity,
-            cost,
-            realized,
-            unmatched,
-            matched
-        )
