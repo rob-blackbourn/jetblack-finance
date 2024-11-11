@@ -39,7 +39,7 @@ from .types import IMarketTrade, IPnlTrade, IUnmatchedPool, IMatchedPool, Tradin
 
 
 def _extend_position(
-        state: TradingPnl,
+        pnl: TradingPnl,
         trade: IPnlTrade,
         unmatched: IUnmatchedPool
 ) -> TradingPnl:
@@ -55,31 +55,31 @@ def _extend_position(
     the cost of creating the position.
 
     Args:
-        state (IPnlState): The state of the system.
+        pnl (TradingPnl): The current P/L.
         trade (IPnlTrade): The new trade.
-        create_state (CreatePnlState): A factory method to create the new state.
+        unmatched (IUnmatchedPoll): The pool of unmatched trades.
 
     Returns:
-        IPnlState: The new P&L state.
+        TradingPnl: The new P/L
     """
-    quantity = state.quantity + trade.quantity
-    cost = state.cost - trade.quantity * trade.trade.price
+    quantity = pnl.quantity + trade.quantity
+    cost = pnl.cost - trade.quantity * trade.trade.price
     unmatched.push(trade)
 
     return TradingPnl(
         quantity,
         cost,
-        state.realized,
+        pnl.realized,
     )
 
 
 def _find_opening_trade(
-        state: TradingPnl,
+        pnl: TradingPnl,
         closing_trade: IPnlTrade,
         unmatched: IUnmatchedPool
 ) -> tuple[IPnlTrade, IPnlTrade, IPnlTrade | None]:
     # Select an opening trade.
-    opening_trade = unmatched.pop(state.quantity, state.cost)
+    opening_trade = unmatched.pop(pnl.quantity, pnl.cost)
 
     if abs(closing_trade.quantity) > abs(opening_trade.quantity):
 
@@ -129,13 +129,13 @@ def _find_opening_trade(
 
 
 def _match(
-        state: TradingPnl,
+        pnl: TradingPnl,
         closing_trade: IPnlTrade,
         unmatched: IUnmatchedPool,
         matched: IMatchedPool
 ) -> tuple[IPnlTrade | None, TradingPnl]:
     closing_trade, opening_trade, unmatched_opening_trade = _find_opening_trade(
-        state,
+        pnl,
         closing_trade,
         unmatched
     )
@@ -146,62 +146,62 @@ def _match(
     close_value = closing_trade.quantity * closing_trade.trade.price
     open_cost = -(opening_trade.quantity * opening_trade.trade.price)
 
-    state = TradingPnl(
-        state.quantity - opening_trade.quantity,
-        state.cost - open_cost,
-        state.realized + (open_cost - close_value),
+    pnl = TradingPnl(
+        pnl.quantity - opening_trade.quantity,
+        pnl.cost - open_cost,
+        pnl.realized + (open_cost - close_value),
     )
 
-    return unmatched_opening_trade, state
+    return unmatched_opening_trade, pnl
 
 
 def _reduce_position(
-        state: TradingPnl,
+        pnl: TradingPnl,
         reducing_trade: IPnlTrade | None,
         unmatched: IUnmatchedPool,
         matched: IMatchedPool
 ) -> TradingPnl:
     while reducing_trade is not None and reducing_trade.quantity != 0 and len(unmatched) > 0:
-        reducing_trade, state = _match(
-            state,
+        reducing_trade, pnl = _match(
+            pnl,
             reducing_trade,
             unmatched,
             matched
         )
 
     if reducing_trade is not None and reducing_trade.quantity != 0:
-        state = add_pnl_trade(
-            state,
+        pnl = add_pnl_trade(
+            pnl,
             reducing_trade,
             unmatched,
             matched
         )
 
-    return state
+    return pnl
 
 
 def add_pnl_trade(
-        state: TradingPnl,
+        pnl: TradingPnl,
         trade: IPnlTrade,
         unmatched: IUnmatchedPool,
         matched: IMatchedPool
 ) -> TradingPnl:
     if (
         # We are flat
-        state.quantity == 0 or
+        pnl.quantity == 0 or
         # We are long and buying
-        (state.quantity > 0 and trade.quantity > 0) or
+        (pnl.quantity > 0 and trade.quantity > 0) or
         # We are short and selling.
-        (state.quantity < 0 and trade.quantity < 0)
+        (pnl.quantity < 0 and trade.quantity < 0)
     ):
         return _extend_position(
-            state,
+            pnl,
             trade,
             unmatched
         )
     else:
         return _reduce_position(
-            state,
+            pnl,
             trade,
             unmatched,
             matched
@@ -209,13 +209,13 @@ def add_pnl_trade(
 
 
 def add_trade(
-        state: TradingPnl,
+        pnl: TradingPnl,
         market_trade: IMarketTrade,
         unmatched: IUnmatchedPool,
         matched: IMatchedPool
 ) -> TradingPnl:
     return add_pnl_trade(
-        state,
+        pnl,
         IPnlTrade(market_trade.quantity, market_trade),
         unmatched,
         matched
