@@ -47,9 +47,8 @@ def _extend_position(
 
     This happens for:
 
-    * A buy or sell from a flat position.
-    * A buy from a long position.
-    * A sell from a short position.
+    * A buy from a long or flat position.
+    * A sell from a short or flat position.
 
     In this situation no P&L is generated. The position size is increased, as is
     the cost of creating the position.
