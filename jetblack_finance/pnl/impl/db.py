@@ -19,7 +19,6 @@ from jetblack_finance.pnl import (
     IUnmatchedPool,
     add_trade
 )
-from jetblack_finance.pnl.algorithm import add_trade
 
 
 class MarketTrade(IMarketTrade):
@@ -87,7 +86,6 @@ class MarketTrade(IMarketTrade):
         row = cast(dict | None, cur.fetchone())
         if row is None:
             return None
-        # TODO: check that quantity and price are decimals.
         return MarketTrade(trade_id, row['timestamp'], row['ticker'], row['quantity'], row['price'], row['book'])
 
     @classmethod
