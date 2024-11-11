@@ -2,8 +2,8 @@
 
 from decimal import Decimal
 
-from jetblack_finance.pnl import IMarketTrade, IPnlState, IPnlTrade, add_trade
-from jetblack_finance.pnl.impl.simple import (
+from jetblack_finance.trading_pnl import IMarketTrade, IPnlState, IPnlTrade, add_trade
+from jetblack_finance.trading_pnl.impl.simple import (
     MatchedPool,
     UnmatchedPool,
 )

@@ -11,7 +11,7 @@ import pymysql.cursors
 from pymysql import Connection
 from pymysql.cursors import Cursor, DictCursor
 
-from jetblack_finance.pnl import (
+from jetblack_finance.trading_pnl import (
     IMarketTrade,
     IPnlState,
     IPnlTrade,
