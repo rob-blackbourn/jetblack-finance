@@ -20,7 +20,7 @@ class IMarketTrade(Protocol):
         ...
 
 
-class IPnlTrade(NamedTuple):
+class PnlTrade(NamedTuple):
     quantity: Decimal
     trade: IMarketTrade
 
@@ -28,11 +28,11 @@ class IPnlTrade(NamedTuple):
 class IUnmatchedPool(Protocol):
 
     @abstractmethod
-    def push(self, pnl_trade: IPnlTrade) -> None:
+    def push(self, pnl_trade: PnlTrade) -> None:
         ...
 
     @abstractmethod
-    def pop(self, quantity: Decimal, cost: Decimal) -> IPnlTrade:
+    def pop(self, quantity: Decimal, cost: Decimal) -> PnlTrade:
         ...
 
     def __len__(self) -> int:
@@ -42,7 +42,7 @@ class IUnmatchedPool(Protocol):
 class IMatchedPool(Protocol):
 
     @abstractmethod
-    def push(self, opening: IPnlTrade, closing: IPnlTrade) -> None:
+    def push(self, opening: PnlTrade, closing: PnlTrade) -> None:
         ...
 
     def __len__(self) -> int:

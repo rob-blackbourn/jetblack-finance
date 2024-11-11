@@ -12,7 +12,7 @@ from pymysql.cursors import Cursor
 from .. import (
     IMarketTrade,
     TradingPnl,
-    IPnlTrade,
+    PnlTrade,
     IMatchedPool,
     IUnmatchedPool,
     add_trade
@@ -122,7 +122,7 @@ class MatchedPool(IMatchedPool):
         self._ticker = ticker
         self._book = book
 
-    def push(self, opening: IPnlTrade, closing: IPnlTrade) -> None:
+    def push(self, opening: PnlTrade, closing: PnlTrade) -> None:
         self._cur.execute(
             """
             INSERT INTO trading.matched_trade(
@@ -172,7 +172,7 @@ class UnmatchedPool:
             self._ticker = ticker
             self._book = book
 
-        def push(self, pnl_trade: IPnlTrade) -> None:
+        def push(self, pnl_trade: PnlTrade) -> None:
             self._cur.execute(
                 """
                 INSERT INTO trading.unmatched_trade(
@@ -189,7 +189,7 @@ class UnmatchedPool:
                 )
             )
 
-        def pop(self, _quantity: Decimal, _cost: Decimal) -> IPnlTrade:
+        def pop(self, _quantity: Decimal, _cost: Decimal) -> PnlTrade:
             # Find the oldest unmatched trade.
             self._cur.execute(
                 """
@@ -229,7 +229,7 @@ class UnmatchedPool:
             market_trade = MarketTrade.read(self._cur, row['trade_id'])
             if market_trade is None:
                 raise RuntimeError("unable to find market trade")
-            pnl_trade = IPnlTrade(row['quantity'], market_trade)
+            pnl_trade = PnlTrade(row['quantity'], market_trade)
             return pnl_trade
 
         def __len__(self) -> int:

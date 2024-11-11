@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from jetblack_finance.trading_pnl import TradingPnl, IPnlTrade, add_trade
+from jetblack_finance.trading_pnl import TradingPnl, PnlTrade, add_trade
 from jetblack_finance.trading_pnl.impl.simple import (
     MarketTrade,
     MatchedPool,
@@ -163,8 +163,8 @@ def test_long_to_short_fifo_with_profit():
     assert len(unmatched) == 0
     expected = MatchedPool((
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 100)),
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 102))
+            PnlTrade(Decimal(1), MarketTrade(1, 100)),
+            PnlTrade(Decimal(-1), MarketTrade(-1, 102))
         ),
     ))
     assert matched == expected
@@ -185,8 +185,8 @@ def test_short_to_long_fifo_with_profit():
     assert len(unmatched) == 0
     assert matched == MatchedPool((
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 102)),
-            IPnlTrade(Decimal(1), MarketTrade(1, 100))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 102)),
+            PnlTrade(Decimal(1), MarketTrade(1, 100))
         ),
     ))
 
@@ -206,8 +206,8 @@ def test_long_to_short_fifo_with_loss():
     assert len(unmatched) == 0
     assert matched == MatchedPool((
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 102)),
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 100))
+            PnlTrade(Decimal(1), MarketTrade(1, 102)),
+            PnlTrade(Decimal(-1), MarketTrade(-1, 100))
         ),
     ))
 
@@ -227,8 +227,8 @@ def test_short_to_long_fifo_with_loss():
     assert len(unmatched) == 0
     assert matched == MatchedPool((
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 100)),
-            IPnlTrade(Decimal(1), MarketTrade(1, 102))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 100)),
+            PnlTrade(Decimal(1), MarketTrade(1, 102))
         ),
     ))
 
@@ -245,12 +245,12 @@ def test_long_sell_fifo_through_flat():
     assert pnl.cost == 102
     assert pnl.realized == 1
     assert unmatched == UnmatchedPool.Fifo((
-        IPnlTrade(Decimal(-1), MarketTrade(-2, 102)),
+        PnlTrade(Decimal(-1), MarketTrade(-2, 102)),
     ))
     assert matched == MatchedPool((
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 101)),
-            IPnlTrade(Decimal(-1), MarketTrade(-2, 102))
+            PnlTrade(Decimal(1), MarketTrade(1, 101)),
+            PnlTrade(Decimal(-1), MarketTrade(-2, 102))
         ),
     ))
 
@@ -267,12 +267,12 @@ def test_short_buy_fifo_through_flat():
     assert pnl.cost == -101
     assert pnl.realized == 1
     assert unmatched == UnmatchedPool.Fifo((
-        IPnlTrade(Decimal(1), MarketTrade(2, 101)),
+        PnlTrade(Decimal(1), MarketTrade(2, 101)),
     ))
     assert matched == MatchedPool((
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 102)),
-            IPnlTrade(Decimal(1), MarketTrade(2, 101))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 102)),
+            PnlTrade(Decimal(1), MarketTrade(2, 101))
         ),
     ))
 
@@ -295,12 +295,12 @@ def test_one_buy_many_sells_fifo():
     assert len(unmatched) == 0
     assert matched == MatchedPool((
         (
-            IPnlTrade(Decimal(5), MarketTrade(10, 101)),
-            IPnlTrade(Decimal(-5), MarketTrade(-5, 102))
+            PnlTrade(Decimal(5), MarketTrade(10, 101)),
+            PnlTrade(Decimal(-5), MarketTrade(-5, 102))
         ),
         (
-            IPnlTrade(Decimal(5), MarketTrade(10, 101)),
-            IPnlTrade(Decimal(-5), MarketTrade(-5, 104))
+            PnlTrade(Decimal(5), MarketTrade(10, 101)),
+            PnlTrade(Decimal(-5), MarketTrade(-5, 104))
         ),
     ))
 
@@ -351,24 +351,24 @@ def test_many_buys_one_sell_fifo():
     pnl = add_trade(pnl, MarketTrade(-5, 104), unmatched, matched)
     assert matched == MatchedPool((
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 100)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 100)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 102)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 102)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 101)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 101)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 104)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 104)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 103)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 103)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
     ))
 
@@ -387,24 +387,24 @@ def test_many_buys_one_sell_lifo():
     pnl = add_trade(pnl, MarketTrade(-5, 104), unmatched, matched)
     assert matched == MatchedPool((
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 103)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 103)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 104)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 104)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 101)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 101)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 102)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 102)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 100)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 100)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
     ))
 
@@ -423,24 +423,24 @@ def test_many_buys_one_sell_best_price():
     pnl = add_trade(pnl, MarketTrade(-5, 104), unmatched, matched)
     assert matched == MatchedPool((
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 100)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 100)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 101)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 101)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 102)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 102)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 103)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 103)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 104)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 104)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
     ))
 
@@ -460,24 +460,24 @@ def test_many_sells_one_buy_best_price():
 
     expected = MatchedPool((
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 104)),
-            IPnlTrade(Decimal(1), MarketTrade(5, 104))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 104)),
+            PnlTrade(Decimal(1), MarketTrade(5, 104))
         ),
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 103)),
-            IPnlTrade(Decimal(1), MarketTrade(5, 104))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 103)),
+            PnlTrade(Decimal(1), MarketTrade(5, 104))
         ),
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 102)),
-            IPnlTrade(Decimal(1), MarketTrade(5, 104))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 102)),
+            PnlTrade(Decimal(1), MarketTrade(5, 104))
         ),
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 101)),
-            IPnlTrade(Decimal(1), MarketTrade(5, 104))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 101)),
+            PnlTrade(Decimal(1), MarketTrade(5, 104))
         ),
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 100)),
-            IPnlTrade(Decimal(1), MarketTrade(5, 104))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 100)),
+            PnlTrade(Decimal(1), MarketTrade(5, 104))
         ),
     ))
 
@@ -499,24 +499,24 @@ def test_many_buys_one_sell_worst_price():
 
     expected = MatchedPool((
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 104)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 104)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 103)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 103)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 102)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 102)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 101)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 101)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
         (
-            IPnlTrade(Decimal(1), MarketTrade(1, 100)),
-            IPnlTrade(Decimal(-1), MarketTrade(-5, 104))
+            PnlTrade(Decimal(1), MarketTrade(1, 100)),
+            PnlTrade(Decimal(-1), MarketTrade(-5, 104))
         ),
     ))
 
@@ -538,24 +538,24 @@ def test_many_sells_one_buy_worst_price():
 
     expected = MatchedPool((
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 100)),
-            IPnlTrade(Decimal(1), MarketTrade(5, 104))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 100)),
+            PnlTrade(Decimal(1), MarketTrade(5, 104))
         ),
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 101)),
-            IPnlTrade(Decimal(1), MarketTrade(5, 104))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 101)),
+            PnlTrade(Decimal(1), MarketTrade(5, 104))
         ),
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 102)),
-            IPnlTrade(Decimal(1), MarketTrade(5, 104))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 102)),
+            PnlTrade(Decimal(1), MarketTrade(5, 104))
         ),
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 103)),
-            IPnlTrade(Decimal(1), MarketTrade(5, 104))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 103)),
+            PnlTrade(Decimal(1), MarketTrade(5, 104))
         ),
         (
-            IPnlTrade(Decimal(-1), MarketTrade(-1, 104)),
-            IPnlTrade(Decimal(1), MarketTrade(5, 104))
+            PnlTrade(Decimal(-1), MarketTrade(-1, 104)),
+            PnlTrade(Decimal(1), MarketTrade(5, 104))
         ),
     ))
     assert matched == expected

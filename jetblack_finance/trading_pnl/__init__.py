@@ -1,7 +1,7 @@
 """pnl"""
 
 from .types import (
-    IPnlTrade,
+    PnlTrade,
     IMarketTrade,
     TradingPnl,
     IMatchedPool,
@@ -12,7 +12,7 @@ from .algorithm import add_trade
 __all__ = [
     'IMarketTrade',
     'TradingPnl',
-    'IPnlTrade',
+    'PnlTrade',
     'IMatchedPool',
     'IUnmatchedPool',
     'add_trade'
