@@ -73,12 +73,11 @@ def _extend_position(
 
 
 def _find_opening_trade(
-        pnl: TradingPnl,
         closing_trade: PnlTrade,
         unmatched: IUnmatchedPool
 ) -> tuple[PnlTrade, PnlTrade, PnlTrade | None]:
     # Select an opening trade.
-    opening_trade = unmatched.pop(pnl.quantity, pnl.cost)
+    opening_trade = unmatched.pop(closing_trade)
 
     if abs(closing_trade.quantity) > abs(opening_trade.quantity):
 
@@ -134,7 +133,6 @@ def _match(
         matched: IMatchedPool
 ) -> tuple[PnlTrade | None, TradingPnl]:
     closing_trade, opening_trade, unmatched_opening_trade = _find_opening_trade(
-        pnl,
         closing_trade,
         unmatched
     )

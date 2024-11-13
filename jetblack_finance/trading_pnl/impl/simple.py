@@ -44,7 +44,7 @@ class UnmatchedPool:
         def push(self, pnl_trade: PnlTrade) -> None:
             self._pool = tuple((*self._pool, pnl_trade))
 
-        def pop(self, _quantity: Decimal, _cost: Decimal) -> PnlTrade:
+        def pop(self, _closing: PnlTrade) -> PnlTrade:
             trade, self._pool = (self._pool[0], self._pool[1:])
             return trade
 
@@ -68,7 +68,7 @@ class UnmatchedPool:
         def push(self, pnl_trade: PnlTrade) -> None:
             self._pool = tuple((*self._pool, pnl_trade))
 
-        def pop(self, _quantity: Decimal, _cost: Decimal) -> PnlTrade:
+        def pop(self, _closing: PnlTrade) -> PnlTrade:
             trade, self._pool = (self._pool[-1], self._pool[:-1])
             return trade
 
@@ -92,11 +92,11 @@ class UnmatchedPool:
         def push(self, pnl_trade: PnlTrade) -> None:
             self._pool = tuple((*self._pool, pnl_trade))
 
-        def pop(self, quantity: Decimal, _cost: Decimal) -> PnlTrade:
+        def pop(self, closing: PnlTrade) -> PnlTrade:
             self._pool = sorted(self._pool, key=lambda x: x.trade.price)
             trade, self._pool = (
                 (self._pool[0], self._pool[1:])
-                if quantity >= 0
+                if closing.quantity < 0
                 else (self._pool[-1], self._pool[:-1])
             )
             return trade
@@ -121,11 +121,11 @@ class UnmatchedPool:
         def push(self, pnl_trade: PnlTrade) -> None:
             self._pool = tuple((*self._pool, pnl_trade))
 
-        def pop(self, quantity: Decimal, _cost: Decimal) -> PnlTrade:
+        def pop(self, closing: PnlTrade) -> PnlTrade:
             self._pool = sorted(self._pool, key=lambda x: x.trade.price)
             trade, self._pool = (
                 (self._pool[-1], self._pool[:-1])
-                if quantity > 0
+                if closing.quantity <= 0
                 else (self._pool[0], self._pool[1:])
             )
             return trade

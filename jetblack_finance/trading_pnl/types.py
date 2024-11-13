@@ -32,7 +32,7 @@ class IUnmatchedPool(Protocol):
         ...
 
     @abstractmethod
-    def pop(self, quantity: Decimal, cost: Decimal) -> PnlTrade:
+    def pop(self, closing: PnlTrade) -> PnlTrade:
         ...
 
     def __len__(self) -> int:
