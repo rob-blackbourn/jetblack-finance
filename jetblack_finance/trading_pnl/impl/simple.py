@@ -36,6 +36,7 @@ class MatchedPool(IMatchedPool):
 
 
 class UnmatchedPool:
+
     class Fifo(IUnmatchedPool):
 
         def __init__(self, pool: Sequence[PnlTrade] = ()) -> None:
@@ -47,6 +48,9 @@ class UnmatchedPool:
         def pop(self, _closing: PnlTrade) -> PnlTrade:
             trade, self._pool = (self._pool[0], self._pool[1:])
             return trade
+
+        def has(self, _closing: PnlTrade) -> bool:
+            return len(self._pool) > 0
 
         def __len__(self) -> int:
             return len(self._pool)
@@ -71,6 +75,9 @@ class UnmatchedPool:
         def pop(self, _closing: PnlTrade) -> PnlTrade:
             trade, self._pool = (self._pool[-1], self._pool[:-1])
             return trade
+
+        def has(self, _closing: PnlTrade) -> bool:
+            return len(self._pool) > 0
 
         def __len__(self) -> int:
             return len(self._pool)
@@ -101,6 +108,9 @@ class UnmatchedPool:
             )
             return trade
 
+        def has(self, _closing: PnlTrade) -> bool:
+            return len(self._pool) > 0
+
         def __len__(self) -> int:
             return len(self._pool)
 
@@ -129,6 +139,9 @@ class UnmatchedPool:
                 else (self._pool[0], self._pool[1:])
             )
             return trade
+
+        def has(self, _closing: PnlTrade) -> bool:
+            return len(self._pool) > 0
 
         def __len__(self) -> int:
             return len(self._pool)

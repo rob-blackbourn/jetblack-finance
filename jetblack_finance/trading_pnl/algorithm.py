@@ -154,22 +154,22 @@ def _match(
 
 def _reduce_position(
         pnl: TradingPnl,
-        reducing_trade: PnlTrade | None,
+        closing: PnlTrade | None,
         unmatched: IUnmatchedPool,
         matched: IMatchedPool
 ) -> TradingPnl:
-    while reducing_trade is not None and reducing_trade.quantity != 0 and len(unmatched) > 0:
-        reducing_trade, pnl = _match(
+    while closing is not None and closing.quantity != 0 and unmatched.has(closing):
+        closing, pnl = _match(
             pnl,
-            reducing_trade,
+            closing,
             unmatched,
             matched
         )
 
-    if reducing_trade is not None and reducing_trade.quantity != 0:
+    if closing is not None and closing.quantity != 0:
         pnl = _add_pnl_trade(
             pnl,
-            reducing_trade,
+            closing,
             unmatched,
             matched
         )

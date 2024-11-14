@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import pymysql
 import pymysql.cursors
+from pymysql.constants import CLIENT
 
 from jetblack_finance.trading_pnl.impl.db import TradeDb
 
@@ -15,7 +16,8 @@ def main():
         user='rtb',
         password='thereisnospoon',
         database='trading',
-        cursorclass=pymysql.cursors.DictCursor
+        cursorclass=pymysql.cursors.DictCursor,
+        client_flag=CLIENT.MULTI_STATEMENTS
     )
 
     trade_db = TradeDb(con)

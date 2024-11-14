@@ -35,8 +35,12 @@ class IUnmatchedPool(Protocol):
     def pop(self, closing: PnlTrade) -> PnlTrade:
         ...
 
-    def __len__(self) -> int:
+    @abstractmethod
+    def has(self, closing: PnlTrade) -> bool:
         ...
+
+    # def __len__(self) -> int:
+    #     ...
 
 
 class IMatchedPool(Protocol):
@@ -45,8 +49,8 @@ class IMatchedPool(Protocol):
     def push(self, opening: PnlTrade, closing: PnlTrade) -> None:
         ...
 
-    def __len__(self) -> int:
-        ...
+    # def __len__(self) -> int:
+    #     ...
 
 
 class PnlStrip(NamedTuple):

@@ -1,8 +1,14 @@
 """SQL statements"""
 
+from datetime import datetime
+from decimal import Decimal
+from typing import cast
+
 from pymysql.cursors import Cursor
 
 from ... import TradingPnl
+
+MAX_VALID_TO = datetime(2029, 12, 31, 23, 59, 59)
 
 
 def create_table_pnl(cur: Cursor) -> None:
@@ -16,7 +22,10 @@ def create_table_pnl(cur: Cursor) -> None:
             cost        DECIMAL(18, 6)  NOT NULL,
             realized    DECIMAL(18, 6)  NOT NULL,
 
-            PRIMARY KEY(ticker, book)
+            valid_from  TIMESTAMP       NOT NULL,
+            valid_to    TIMESTAMP       NOT NULL,
+
+            PRIMARY KEY(valid_from, valid_to, ticker, book)
         )
         """
     )
@@ -48,7 +57,10 @@ def create_table_unmatched_trade(cur: Cursor) -> None:
             trade_id    INTEGER         NOT NULL,
             quantity    DECIMAL(12, 0)  NOT NULL,
 
-            PRIMARY KEY (trade_id, quantity),
+            valid_from  TIMESTAMP       NOT NULL,
+            valid_to    TIMESTAMP       NOT NULL,
+
+            PRIMARY KEY (valid_from, valid_to, trade_id, quantity),
             FOREIGN KEY (trade_id) REFERENCES trading.trade(trade_id)
         );
         """
@@ -63,7 +75,10 @@ def create_table_matched_trade(cur: Cursor) -> None:
             opening_trade_id    INTEGER NOT NULL,
             closing_trade_id    INTEGER NOT NULL,
 
-            PRIMARY KEY(opening_trade_id, closing_trade_id),
+            valid_from  TIMESTAMP       NOT NULL,
+            valid_to    TIMESTAMP       NOT NULL,
+
+            PRIMARY KEY(valid_from, valid_to, opening_trade_id, closing_trade_id),
 
             FOREIGN KEY (opening_trade_id) REFERENCES trading.trade(trade_id),
             FOREIGN KEY (closing_trade_id) REFERENCES trading.trade(trade_id)
@@ -86,32 +101,83 @@ def drop_tables(cur: Cursor) -> None:
     cur.execute("DROP TABLE trading.pnl;")
 
 
-def save_pnl(cur: Cursor, pnl: TradingPnl, ticker: str, book: str) -> None:
+def select_pnl(cur: Cursor, ticker: str, book: str, timestamp: datetime) -> TradingPnl:
     cur.execute(
         """
+        SELECT
+            quantity,
+            cost,
+            realized
+        FROM
+            trading.pnl
+        WHERE
+            ticker = %(ticker)s
+        AND
+            book = %(book)s
+        AND
+            valid_from <= %(timestamp)s
+        AND
+            valid_to = %(max_valid_to)s
+        """,
+        {
+            'ticker': ticker,
+            'book': book,
+            'timestamp': timestamp.isoformat(),
+            'max_valid_to': MAX_VALID_TO.isoformat()
+        }
+    )
+    row = cast(dict | None, cur.fetchone())
+    if row is None:
+        return TradingPnl(Decimal(0), Decimal(0), Decimal(0))
+
+    return TradingPnl(row['quantity'], row['cost'], row['realized'])
+
+
+def save_pnl(cur: Cursor, pnl: TradingPnl, ticker: str, book: str, timestamp: datetime) -> None:
+    cur.execute(
+        """
+        UPDATE
+            trading.pnl
+        SET
+            valid_to = %(timestamp)s
+        WHERE
+            ticker = %(ticker)s
+        AND
+            book = %(book)s
+        AND
+            valid_from <= %(timestamp)s
+        AND
+            valid_to = %(max_valid_to)s;
+
         INSERT INTO trading.pnl
         (
             ticker,
             book,
             quantity,
             cost,
-            realized
+            realized,
+            valid_from,
+            valid_to
         ) VALUES (
             %(ticker)s,
             %(book)s,
             %(quantity)s,
             %(cost)s,
-            %(realized)s
+            %(realized)s,
+            %(timestamp)s,
+            %(max_valid_to)s
         ) ON DUPLICATE KEY UPDATE
             quantity = %(quantity)s,
             cost = %(cost)s,
-            realized = %(realized)s
+            realized = %(realized)s;
         """,
         {
             'ticker': ticker,
             'book': book,
             'quantity': pnl.quantity,
             'cost': pnl.cost,
-            'realized': pnl.realized
+            'realized': pnl.realized,
+            'timestamp': timestamp.isoformat(),
+            'max_valid_to': MAX_VALID_TO.isoformat()
         }
     )
