@@ -8,7 +8,7 @@ from pymysql.cursors import Cursor
 
 from ... import TradingPnl
 
-MAX_VALID_TO = datetime(2029, 12, 31, 23, 59, 59)
+MAX_VALID_TO = datetime(9999, 12, 31, 23, 59, 59)
 
 
 def create_table_pnl(cur: Cursor) -> None:
@@ -22,8 +22,8 @@ def create_table_pnl(cur: Cursor) -> None:
             cost        DECIMAL(18, 6)  NOT NULL,
             realized    DECIMAL(18, 6)  NOT NULL,
 
-            valid_from  TIMESTAMP       NOT NULL,
-            valid_to    TIMESTAMP       NOT NULL,
+            valid_from  DATETIME        NOT NULL,
+            valid_to    DATETIME        NOT NULL,
 
             PRIMARY KEY(valid_from, valid_to, ticker, book)
         )
@@ -37,7 +37,7 @@ def create_table_trade(cur: Cursor) -> None:
         CREATE TABLE IF NOT EXISTS trading.trade
         (
             trade_id    INTEGER         NOT NULL AUTO_INCREMENT,
-            timestamp   TIMESTAMP       NOT NULL,
+            timestamp   DATETIME        NOT NULL,
             ticker      VARCHAR(32)     NOT NULL,
             quantity    DECIMAL(12, 0)  NOT NULL,
             price       DECIMAL(18, 6)  NOT NULL,
@@ -57,8 +57,8 @@ def create_table_unmatched_trade(cur: Cursor) -> None:
             trade_id    INTEGER         NOT NULL,
             quantity    DECIMAL(12, 0)  NOT NULL,
 
-            valid_from  TIMESTAMP       NOT NULL,
-            valid_to    TIMESTAMP       NOT NULL,
+            valid_from  DATETIME        NOT NULL,
+            valid_to    DATETIME        NOT NULL,
 
             PRIMARY KEY (valid_from, valid_to, trade_id, quantity),
             FOREIGN KEY (trade_id) REFERENCES trading.trade(trade_id)
@@ -72,11 +72,11 @@ def create_table_matched_trade(cur: Cursor) -> None:
         """
         CREATE TABLE IF NOT EXISTS trading.matched_trade
         (
-            opening_trade_id    INTEGER NOT NULL,
-            closing_trade_id    INTEGER NOT NULL,
+            opening_trade_id        INTEGER NOT NULL,
+            closing_trade_id        INTEGER NOT NULL,
 
-            valid_from  TIMESTAMP       NOT NULL,
-            valid_to    TIMESTAMP       NOT NULL,
+            valid_from  DATETIME    NOT NULL,
+            valid_to    DATETIME    NOT NULL,
 
             PRIMARY KEY(valid_from, valid_to, opening_trade_id, closing_trade_id),
 
