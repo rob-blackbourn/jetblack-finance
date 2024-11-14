@@ -28,7 +28,7 @@ class PnlTrade(NamedTuple):
 class IUnmatchedPool(Protocol):
 
     @abstractmethod
-    def push(self, pnl_trade: PnlTrade) -> None:
+    def push(self, opening: PnlTrade) -> None:
         ...
 
     @abstractmethod

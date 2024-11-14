@@ -42,8 +42,8 @@ class UnmatchedPool:
         def __init__(self, pool: Sequence[PnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, pnl_trade: PnlTrade) -> None:
-            self._pool = tuple((*self._pool, pnl_trade))
+        def push(self, opening: PnlTrade) -> None:
+            self._pool = tuple((*self._pool, opening))
 
         def pop(self, _closing: PnlTrade) -> PnlTrade:
             trade, self._pool = (self._pool[0], self._pool[1:])
@@ -69,8 +69,8 @@ class UnmatchedPool:
         def __init__(self, pool: Sequence[PnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, pnl_trade: PnlTrade) -> None:
-            self._pool = tuple((*self._pool, pnl_trade))
+        def push(self, opening: PnlTrade) -> None:
+            self._pool = tuple((*self._pool, opening))
 
         def pop(self, _closing: PnlTrade) -> PnlTrade:
             trade, self._pool = (self._pool[-1], self._pool[:-1])
@@ -96,8 +96,8 @@ class UnmatchedPool:
         def __init__(self, pool: Sequence[PnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, pnl_trade: PnlTrade) -> None:
-            self._pool = tuple((*self._pool, pnl_trade))
+        def push(self, opening: PnlTrade) -> None:
+            self._pool = tuple((*self._pool, opening))
 
         def pop(self, closing: PnlTrade) -> PnlTrade:
             self._pool = sorted(self._pool, key=lambda x: x.trade.price)
@@ -128,8 +128,8 @@ class UnmatchedPool:
         def __init__(self, pool: Sequence[PnlTrade] = ()) -> None:
             self._pool = pool
 
-        def push(self, pnl_trade: PnlTrade) -> None:
-            self._pool = tuple((*self._pool, pnl_trade))
+        def push(self, opening: PnlTrade) -> None:
+            self._pool = tuple((*self._pool, opening))
 
         def pop(self, closing: PnlTrade) -> PnlTrade:
             self._pool = sorted(self._pool, key=lambda x: x.trade.price)

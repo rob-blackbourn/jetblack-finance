@@ -58,8 +58,8 @@ class UnmatchedPool:
             self._ticker = ticker
             self._book = book
 
-        def push(self, pnl_trade: PnlTrade) -> None:
-            market_trade = cast(MarketTrade, pnl_trade.trade)
+        def push(self, opening: PnlTrade) -> None:
+            market_trade = cast(MarketTrade, opening.trade)
 
             self._cur.execute(
                 """
@@ -77,7 +77,7 @@ class UnmatchedPool:
                 """,
                 {
                     'trade_id': market_trade.trade_id,
-                    'quantity': pnl_trade.quantity,
+                    'quantity': opening.quantity,
                     'valid_from': market_trade.timestamp.isoformat(),
                     'valid_to': MAX_VALID_TO.isoformat()
                 }
