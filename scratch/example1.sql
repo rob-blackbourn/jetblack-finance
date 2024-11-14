@@ -4,4 +4,24 @@ SELECT * FROM trading.unmatched_trade;
 SELECT * FROM trading.matched_trade;
 SELECT * FROM trading.pnl;
 
-SELECT * FROM trading.pnl WHERE ticker = 'AAPL' AND book = 'tech' AND valid_from <= '2000-01-01 09:00:01' AND valid_to = '2029-12-31 23:59:59';
+SELECT
+    *
+FROM
+    trading.pnl
+WHERE
+    ticker = 'AAPL'
+AND
+    book = 'tech'
+AND
+    valid_from <= '2000-01-01 09:00:10' AND '2000-01-01 09:00:10' < valid_to;
+
+SELECT
+    COUNT(*)
+FROM
+    trading.pnl
+WHERE
+    ticker = 'AAPL'
+AND
+    book = 'tech'
+AND
+    valid_from >= '2000-01-01 09:00:04';

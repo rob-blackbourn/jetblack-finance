@@ -101,6 +101,33 @@ def drop_tables(cur: Cursor) -> None:
     cur.execute("DROP TABLE trading.pnl;")
 
 
+def ensure_pnl(cur: Cursor, ticker: str, book: str, timestamp: datetime) -> None:
+    # There should be no pnl on or after this timestamp.
+    cur.execute(
+        """
+        SELECT
+            COUNT(*) AS count
+        FROM
+            trading.pnl
+        WHERE
+            ticker = %(ticker)s
+        AND
+            book = %(book)s
+        AND
+            valid_from >= %(timestamp)s;
+        """,
+        {
+            'ticker': ticker,
+            'book': book,
+            'timestamp': timestamp.isoformat(),
+        }
+    )
+    row = cast(dict | None, cur.fetchone())
+    assert (row is not None)
+    if row['count'] != 0:
+        raise RuntimeError("there is already p/l for this timestamp")
+
+
 def select_pnl(cur: Cursor, ticker: str, book: str, timestamp: datetime) -> TradingPnl:
     cur.execute(
         """
