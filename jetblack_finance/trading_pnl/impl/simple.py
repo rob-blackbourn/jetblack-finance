@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Sequence
+from typing import Sequence, Type
 
-from ..types import (
+from .. import (
+    add_trade,
+    TradingPnl,
     PnlTrade,
     IMarketTrade,
     IMatchedPool,
@@ -180,3 +182,38 @@ class MarketTrade(IMarketTrade):
 
     def __repr__(self) -> str:
         return f"{self.quantity} @ {self.price}"
+
+
+def _to_decimal(number: int | Decimal) -> Decimal:
+    return number if isinstance(number, Decimal) else Decimal(number)
+
+
+class SimplePnl:
+
+    def __init__(self, unmatched: Type[IUnmatchedPool] = UnmatchedPool.Fifo) -> None:
+        self._unmatched = unmatched
+        self._cache: dict[tuple[str, str],
+                          tuple[TradingPnl, IUnmatchedPool, IMatchedPool]] = {}
+
+    def add_trade(
+        self,
+        ticker: str,
+        quantity: int | Decimal,
+        price: int | Decimal,
+        book: str
+    ) -> TradingPnl:
+        key = (ticker, book)
+        if key in self._cache:
+            pnl, unmatched, matched = self._cache[key]
+        else:
+            pnl = TradingPnl(Decimal(0), Decimal(0), Decimal(0))
+            unmatched = self._unmatched()
+            matched = MatchedPool()
+
+        trade = MarketTrade(
+            _to_decimal(quantity),
+            _to_decimal(price),
+        )
+        pnl = add_trade(pnl, trade, unmatched, matched)
+        self._cache[key] = (pnl, unmatched, matched)
+        return pnl
