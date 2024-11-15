@@ -6,7 +6,7 @@ from typing import cast
 
 from pymysql.cursors import Cursor
 
-from ... import TradingPnl
+from .... import TradingPnl
 
 MAX_VALID_TO = datetime(9999, 12, 31, 23, 59, 59)
 

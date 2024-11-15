@@ -8,7 +8,7 @@ from typing import Optional, cast
 
 from pymysql.cursors import Cursor
 
-from ... import IMarketTrade
+from .... import IMarketTrade
 
 
 class MarketTrade(IMarketTrade):

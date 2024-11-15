@@ -7,7 +7,7 @@ import pymysql
 import pymysql.cursors
 from pymysql.constants import CLIENT
 
-from jetblack_finance.trading_pnl.impl.db import TradeDb
+from jetblack_finance.trading_pnl.impl.db.mysql import TradeDb
 
 
 def main():
