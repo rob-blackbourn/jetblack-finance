@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import cast
 
 from sqlite3 import Cursor
 
