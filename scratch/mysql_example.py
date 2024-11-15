@@ -2,6 +2,7 @@
 """
 
 from datetime import datetime, timedelta
+import os
 
 import pymysql
 import pymysql.cursors
@@ -12,10 +13,10 @@ from jetblack_finance.trading_pnl.impl.db.mysql import TradeDb
 
 def main():
     con = pymysql.connect(
-        host='localhost',
-        user='rtb',
-        password='thereisnospoon',
-        database='trading',
+        host=os.environ['MYSQL_HOSTNAME'],
+        user=os.environ['MYSQL_USERNAME'],
+        password=os.environ['MYSQL_PASSWORD'],
+        database=os.environ['MYSQL_DATABASE'],
         cursorclass=pymysql.cursors.DictCursor,
         client_flag=CLIENT.MULTI_STATEMENTS
     )
