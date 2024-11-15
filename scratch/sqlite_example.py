@@ -39,7 +39,7 @@ def convert_datetime(val: bytes) -> datetime:
     return datetime.fromisoformat(val.decode())
 
 
-def main():
+def register_handlers() -> None:
     # Add decimal support
     sqlite3.register_adapter(Decimal, adapt_decimal)
     sqlite3.register_converter("DECIMAL", convert_decimal)
@@ -47,6 +47,10 @@ def main():
     # Add datetime support
     sqlite3.register_adapter(datetime, adapt_datetime)
     sqlite3.register_converter("DATETIME", convert_datetime)
+
+
+def main():
+    register_handlers()
 
     with context(
         sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_DECLTYPES),
