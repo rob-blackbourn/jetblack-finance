@@ -1,23 +1,10 @@
 """SQLite example"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 import sqlite3
-from typing import Callable, Generic, TypeVar, ContextManager
 
-T = TypeVar('T')
-
-
-class context(ContextManager, Generic[T]):
-    def __init__(self, value: T, on_exit: Callable[[T], None]):
-        self._value = value
-        self._on_exit = on_exit
-
-    def __enter__(self) -> T:
-        return self._value
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self._on_exit(self._value)
+from jetblack_finance.trading_pnl.impl.db.sqlite import TradeDb
 
 
 def adapt_decimal(value: Decimal) -> str:
@@ -51,41 +38,42 @@ def register_handlers() -> None:
 
 def main():
     register_handlers()
+    con = sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_DECLTYPES)
 
-    with context(
-        sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_DECLTYPES),
-        lambda con: con.close()
-    ) as con:
-        with context(con.cursor(), lambda cur: cur.close()) as cur:
-            cur.execute(
-                """
-                CREATE TABLE test
-                (
-                    num DECIMAL,
-                    timestamp DATETIME
-                )
-                """
-            )
+    trade_db = TradeDb(con)
 
-            cur.execute(
-                """
-                INSERT INTO test(num, timestamp)
-                VALUES (?, ?)
-                """,
-                (Decimal('4.12'), datetime(2022, 12, 31, 15, 12, 45))
-            )
-            cur.execute(
-                """
-                SELECT
-                    num,
-                    timestamp
-                FROM
-                    test
-                """
-            )
-            for v in cur.fetchone():
-                print(v)
-                print(type(v))
+    # trade_db.drop()
+    trade_db.create_tables()
+
+    ticker = 'AAPL'
+    book = 'tech'
+
+    # Buy 6 @ 100
+    ts = datetime(2000, 1, 1, 9, 0, 0, 0)
+    pnl = trade_db.add_trade(ts, ticker, 6, 100, book)
+    print(pnl)
+
+    # Buy 6 @ 106
+    ts += timedelta(seconds=1)
+    pnl = trade_db.add_trade(ts, ticker, 6, 106, book)
+    print(pnl)
+
+    # Buy 6 @ 103
+    ts += timedelta(seconds=1)
+    pnl = trade_db.add_trade(ts, ticker, 6, 103, book)
+    print(pnl)
+
+    # Sell 9 @ 105
+    ts += timedelta(seconds=1)
+    pnl = trade_db.add_trade(ts, ticker, -9, 105, book)
+    print(pnl)
+
+    # Sell 9 @ 107
+    ts += timedelta(seconds=1)
+    pnl = trade_db.add_trade(ts, ticker, -9, 107, book)
+    print(pnl)
+
+    con.close()
 
 
 if __name__ == '__main__':

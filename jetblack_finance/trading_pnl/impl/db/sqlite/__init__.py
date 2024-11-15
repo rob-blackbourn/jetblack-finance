@@ -1,4 +1,4 @@
-"""A simple mysql database implementation"""
+"""A simple sqlite database implementation"""
 
 from .trade_db import TradeDb
 

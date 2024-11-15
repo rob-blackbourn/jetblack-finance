@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import cast
 
-from pymysql.cursors import Cursor
+from sqlite3 import Cursor
 
 from .... import TradingPnl
 
@@ -14,7 +14,7 @@ MAX_VALID_TO = datetime(9999, 12, 31, 23, 59, 59)
 def create_table_pnl(cur: Cursor) -> None:
     cur.execute(
         """
-        CREATE TABLE IF NOT EXISTS trading.pnl
+        CREATE TABLE IF NOT EXISTS pnl
         (
             ticker      VARCHAR(32)     NOT NULL,
             book        VARCHAR(32)     NOT NULL,
@@ -34,14 +34,14 @@ def create_table_pnl(cur: Cursor) -> None:
 def create_table_trade(cur: Cursor) -> None:
     cur.execute(
         """
-        CREATE TABLE IF NOT EXISTS trading.trade
+        CREATE TABLE IF NOT EXISTS trade
         (
-            trade_id    INTEGER         NOT NULL AUTO_INCREMENT,
+            trade_id    INTEGER         NOT NULL,
             timestamp   DATETIME        NOT NULL,
-            ticker      VARCHAR(32)     NOT NULL,
-            quantity    DECIMAL(12, 0)  NOT NULL,
-            price       DECIMAL(18, 6)  NOT NULL,
-            book        VARCHAR(32)     NOT NULL,
+            ticker      TEXT            NOT NULL,
+            quantity    DECIMAL         NOT NULL,
+            price       DECIMAL         NOT NULL,
+            book        TEXT            NOT NULL,
 
             PRIMARY KEY(trade_id)
         );
@@ -52,16 +52,16 @@ def create_table_trade(cur: Cursor) -> None:
 def create_table_unmatched_trade(cur: Cursor) -> None:
     cur.execute(
         """
-        CREATE TABLE IF NOT EXISTS trading.unmatched_trade
+        CREATE TABLE IF NOT EXISTS unmatched_trade
         (
             trade_id    INTEGER         NOT NULL,
-            quantity    DECIMAL(12, 0)  NOT NULL,
+            quantity    DECIMAL         NOT NULL,
 
             valid_from  DATETIME        NOT NULL,
             valid_to    DATETIME        NOT NULL,
 
             PRIMARY KEY (valid_from, valid_to, trade_id, quantity),
-            FOREIGN KEY (trade_id) REFERENCES trading.trade(trade_id)
+            FOREIGN KEY (trade_id) REFERENCES trade(trade_id)
         );
         """
     )
@@ -70,18 +70,18 @@ def create_table_unmatched_trade(cur: Cursor) -> None:
 def create_table_matched_trade(cur: Cursor) -> None:
     cur.execute(
         """
-        CREATE TABLE IF NOT EXISTS trading.matched_trade
+        CREATE TABLE IF NOT EXISTS matched_trade
         (
-            opening_trade_id        INTEGER NOT NULL,
-            closing_trade_id        INTEGER NOT NULL,
+            opening_trade_id    INTEGER     NOT NULL,
+            closing_trade_id    INTEGER     NOT NULL,
 
-            valid_from  DATETIME    NOT NULL,
-            valid_to    DATETIME    NOT NULL,
+            valid_from          DATETIME    NOT NULL,
+            valid_to            DATETIME    NOT NULL,
 
             PRIMARY KEY(valid_from, valid_to, opening_trade_id, closing_trade_id),
 
-            FOREIGN KEY (opening_trade_id) REFERENCES trading.trade(trade_id),
-            FOREIGN KEY (closing_trade_id) REFERENCES trading.trade(trade_id)
+            FOREIGN KEY (opening_trade_id) REFERENCES trade(trade_id),
+            FOREIGN KEY (closing_trade_id) REFERENCES trade(trade_id)
         );
         """
     )
@@ -95,10 +95,10 @@ def create_tables(cur: Cursor) -> None:
 
 
 def drop_tables(cur: Cursor) -> None:
-    cur.execute("DROP TABLE trading.matched_trade;")
-    cur.execute("DROP TABLE trading.unmatched_trade;")
-    cur.execute("DROP TABLE trading.trade;")
-    cur.execute("DROP TABLE trading.pnl;")
+    cur.execute("DROP TABLE matched_trade;")
+    cur.execute("DROP TABLE unmatched_trade;")
+    cur.execute("DROP TABLE trade;")
+    cur.execute("DROP TABLE pnl;")
 
 
 def ensure_pnl(cur: Cursor, ticker: str, book: str, timestamp: datetime) -> None:
@@ -108,23 +108,20 @@ def ensure_pnl(cur: Cursor, ticker: str, book: str, timestamp: datetime) -> None
         SELECT
             COUNT(*) AS count
         FROM
-            trading.pnl
+            pnl
         WHERE
-            ticker = %(ticker)s
+            ticker = ?
         AND
-            book = %(book)s
+            book = ?
         AND
-            valid_from >= %(timestamp)s;
+            valid_from >= ?;
         """,
-        {
-            'ticker': ticker,
-            'book': book,
-            'timestamp': timestamp.isoformat(),
-        }
+        (ticker, book, timestamp)
     )
-    row = cast(dict | None, cur.fetchone())
+    row = cur.fetchone()
     assert (row is not None)
-    if row['count'] != 0:
+    (count,) = row
+    if count != 0:
         raise RuntimeError("there is already p/l for this timestamp")
 
 
@@ -136,47 +133,48 @@ def select_pnl(cur: Cursor, ticker: str, book: str, timestamp: datetime) -> Trad
             cost,
             realized
         FROM
-            trading.pnl
+            pnl
         WHERE
-            ticker = %(ticker)s
+            ticker = ?
         AND
-            book = %(book)s
+            book = ?
         AND
-            valid_from <= %(timestamp)s
+            valid_from <= ?
         AND
-            valid_to = %(max_valid_to)s
+            valid_to = ?
         """,
-        {
-            'ticker': ticker,
-            'book': book,
-            'timestamp': timestamp.isoformat(),
-            'max_valid_to': MAX_VALID_TO.isoformat()
-        }
+        (ticker, book, timestamp, MAX_VALID_TO)
     )
-    row = cast(dict | None, cur.fetchone())
+    row = cur.fetchone()
     if row is None:
         return TradingPnl(Decimal(0), Decimal(0), Decimal(0))
+    (quantity, cost, realized) = row
 
-    return TradingPnl(row['quantity'], row['cost'], row['realized'])
+    return TradingPnl(quantity, cost, realized)
 
 
 def save_pnl(cur: Cursor, pnl: TradingPnl, ticker: str, book: str, timestamp: datetime) -> None:
     cur.execute(
         """
         UPDATE
-            trading.pnl
+            pnl
         SET
-            valid_to = %(timestamp)s
+            valid_to = ?
         WHERE
-            ticker = %(ticker)s
+            ticker = ?
         AND
-            book = %(book)s
+            book = ?
         AND
-            valid_from <= %(timestamp)s
+            valid_from <= ?
         AND
-            valid_to = %(max_valid_to)s;
+            valid_to = ?;
+        """,
+        (timestamp, ticker, book, timestamp, MAX_VALID_TO)
+    )
 
-        INSERT INTO trading.pnl
+    cur.execute(
+        """
+        INSERT INTO pnl
         (
             ticker,
             book,
@@ -186,22 +184,22 @@ def save_pnl(cur: Cursor, pnl: TradingPnl, ticker: str, book: str, timestamp: da
             valid_from,
             valid_to
         ) VALUES (
-            %(ticker)s,
-            %(book)s,
-            %(quantity)s,
-            %(cost)s,
-            %(realized)s,
-            %(timestamp)s,
-            %(max_valid_to)s
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?
         );
         """,
-        {
-            'ticker': ticker,
-            'book': book,
-            'quantity': pnl.quantity,
-            'cost': pnl.cost,
-            'realized': pnl.realized,
-            'timestamp': timestamp.isoformat(),
-            'max_valid_to': MAX_VALID_TO.isoformat()
-        }
+        (
+            ticker,
+            book,
+            pnl.quantity,
+            pnl.cost,
+            pnl.realized,
+            timestamp,
+            MAX_VALID_TO
+        )
     )

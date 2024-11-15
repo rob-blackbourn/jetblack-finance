@@ -53,6 +53,8 @@ def main():
     pnl = trade_db.add_trade(ts, ticker, -9, 107, book)
     print(pnl)
 
+    con.close()
+
 
 if __name__ == '__main__':
     main()
